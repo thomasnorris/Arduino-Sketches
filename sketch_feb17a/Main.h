@@ -2,7 +2,9 @@
 #define MAIN_H_
 
 #include <Arduino.h>
-#include "Config.h"
+#include "src/Config/Config.h"
+#include "src/Arduino-Helpers/LedClass/Led.h"
+#include "src/Arduino-Helpers/WifiClass/Wifi.h"
 
 void setup();
 void loop();

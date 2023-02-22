@@ -1,0 +1,3 @@
+[submodule "sketch_feb17a/src/Arduino-Helpers"]
+	path = sketch_feb17a/src/Arduino-Helpers
+	url = git@github-personal:thomasnorris/Arduino-Helpers.git
