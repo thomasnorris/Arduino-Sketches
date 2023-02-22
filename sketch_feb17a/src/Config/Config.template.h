@@ -3,7 +3,7 @@
 
 // general
 inline const int BAUD = 9600;
-inline const int LOOP_DELAY_MS = 1000;
+inline const int LOOP_DELAY_MS = 250;
 
 // wifi
 inline const String WIFI_SSID = "";
