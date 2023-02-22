@@ -25,4 +25,7 @@ inline const String GA_AUTH_HEADER = "";
 inline const String GA_AUTH_TOKEN = "";
 inline const String CYCLE_COMMAND = "Activate scene Ellie pooped";
 
+// timers
+inline const unsigned long WAIT_TIME_BEFORE_CYCLE_M = 10;
+
 #endif

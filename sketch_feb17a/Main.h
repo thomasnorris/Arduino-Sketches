@@ -11,4 +11,8 @@
 void setup();
 void loop();
 
+void timerStart();
+void timerStop();
+void cycleIfReady();
+
 #endif
