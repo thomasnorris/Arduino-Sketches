@@ -6,6 +6,7 @@ auto _doorSensor = new Gpio(DOOR_PIN, DOOR_PIN_PINMODE);
 auto _doorLed = new Led(DOOR_LED_PIN, DOOR_LED_ON_VALUE);
 auto _gaClient = new GAClient(GA_URL, GA_AUTH_HEADER, GA_AUTH_TOKEN);
 auto _blynk = new BlynkServer(BLYNK_IP, BLYNK_PORT, BLYNK_AUTH_TOKEN);
+auto _logger = new LoggerClient(LOGGER_URL, LOGGER_AUTH_HEADER, LOGGER_AUTH_TOKEN, LOGGER_APP_ID);
 
 // leds
 auto _doorVirtLed = new VirtualLed(DOOR_LED_VPIN);
@@ -72,7 +73,10 @@ void setup() {
   _cycleCountDisplay->write(_cycle_count);
   _missedCycleCountDisplay->write(_missed_cycle_count);
   _cycleCooldownDisplay->write(CYCLE_COOLDOWN_DELAY_S);
-  _infoDisplay->write("System initialized");
+
+  String init_message = "System initialized";
+  _infoDisplay->write(init_message);
+  _logger->init(init_message);
 }
 
 void loop() {

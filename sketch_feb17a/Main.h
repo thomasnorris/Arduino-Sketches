@@ -4,6 +4,7 @@
 #include <Arduino.h>
 #include <string>
 #include "src/Config/Config.h"
+#include "src/Arduino-Helpers/LoggerClass/LoggerClass.h"
 #include "src/Arduino-Helpers/TimeHelpers/TimeHelpers.h"
 #include "src/Arduino-Helpers/GpioClass/Gpio.h"
 #include "src/Arduino-Helpers/LedClass/Led.h"

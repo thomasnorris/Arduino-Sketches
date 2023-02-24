@@ -44,4 +44,10 @@ inline const int CYCLE_COUNT_DISPLAY_VPIN = 5;
 inline const int MISSED_CYCLE_COUNT_DISPLAY_VPIN = 6;
 inline const int CYCLE_COOLDOWN_DISPLAY_VPIN = 7;
 
+// logger
+inline const String LOGGER_URL = "";
+inline const String LOGGER_AUTH_HEADER = "";
+inline const String LOGGER_AUTH_TOKEN = "";
+inline const int LOGGER_APP_ID = 11;
+
 #endif
