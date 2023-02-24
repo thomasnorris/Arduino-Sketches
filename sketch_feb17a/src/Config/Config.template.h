@@ -3,7 +3,7 @@
 
 // general
 inline const int BAUD = 9600;
-inline const int LOOP_DELAY_MS = 250;
+inline const int LOOP_DELAY_MS = 0;
 
 // wifi
 inline const String WIFI_SSID = "";
@@ -27,6 +27,7 @@ inline const String CYCLE_COMMAND = "Activate scene Ellie pooped";
 
 // timers
 inline const unsigned long WAIT_TIME_BEFORE_CYCLE_M = 10;
+inline const unsigned long CYCLE_COOLDOWN_DELAY_S = 45;
 
 // blynk server settings
 inline const String BLYNK_IP = "192.168.1.63";
@@ -34,10 +35,13 @@ inline const int BLYNK_PORT = 8442;
 inline const String BLYNK_AUTH_TOKEN = "";
 
 // blynk pins
-inline const int TIMER_COUNTDOWN_DISPLAY_PIN = 0;
-inline const int CYCLE_MANUAL_ENABLE_PIN = 1;
-inline const int DOOR_LED_VIRT_PIN = 2;
-inline const int CYCLE_IN_PROGRESS_VIRT_PIN = 3;
-inline const int INFO_DISPLAY_PIN = 4;
+inline const int TIMER_COUNTDOWN_DISPLAY_VPIN = 0;
+inline const int CYCLE_ENABLE_VPIN = 1;
+inline const int DOOR_LED_VPIN = 2;
+inline const int CYCLE_IN_PROGRESS_VPIN = 3;
+inline const int INFO_DISPLAY_VPIN = 4;
+inline const int CYCLE_COUNT_DISPLAY_VPIN = 5;
+inline const int MISSED_CYCLE_COUNT_DISPLAY_VPIN = 6;
+inline const int CYCLE_COOLDOWN_DISPLAY_VPIN = 7;
 
 #endif
