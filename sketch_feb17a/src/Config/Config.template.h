@@ -38,11 +38,13 @@ inline const String BLYNK_AUTH_TOKEN = "";
 inline const int TIMER_COUNTDOWN_DISPLAY_VPIN = 0;
 inline const int CYCLE_ENABLE_VPIN = 1;
 inline const int DOOR_LED_VPIN = 2;
-inline const int CYCLE_IN_PROGRESS_VPIN = 3;
+inline const int CYCLE_IN_PROGRESS_LED_VPIN = 3;
 inline const int INFO_DISPLAY_VPIN = 4;
 inline const int CYCLE_COUNT_DISPLAY_VPIN = 5;
 inline const int MISSED_CYCLE_COUNT_DISPLAY_VPIN = 6;
 inline const int CYCLE_COOLDOWN_DISPLAY_VPIN = 7;
+inline const int CYCLE_TIMING_LED_VPIN = 8;
+inline const int SYSTEM_UPTIME_DISPLAY_VPIN = 9;
 
 // logger
 inline const String LOGGER_URL = "";

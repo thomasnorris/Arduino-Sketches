@@ -14,6 +14,7 @@
 
 extern std::chrono::time_point<std::chrono::system_clock> getTimeNow();
 extern double getElapsedTimeS(std::chrono::time_point<std::chrono::system_clock> start, std::chrono::time_point<std::chrono::system_clock> end);
+extern String formatSeconds(int seconds);
 
 void setup();
 void loop();
@@ -23,5 +24,6 @@ void handleBlynkPinValueChange(int pin, String value);
 void timerStart();
 void timerStop();
 void cycleIfReady();
+void updateUptime();
 
 #endif
