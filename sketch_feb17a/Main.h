@@ -25,5 +25,6 @@ void timerStart();
 void timerStop();
 void cycleIfReady();
 void updateUptime();
+void cycleIfEnabled(bool manual = false); 
 
 #endif

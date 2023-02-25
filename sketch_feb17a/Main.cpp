@@ -15,6 +15,7 @@ auto _cycleTimingLed = new VirtualLed(CYCLE_TIMING_LED_VPIN);
 
 // buttons
 auto _cycleEnableVirtBtn = new VirtualPin(CYCLE_ENABLE_VPIN);
+auto _manualCycleVirtBtn = new VirtualPin(MANUAL_CYCLE_VPIN);
 
 // displays
 auto _timerCountdownDisplay = new VirtualPin(TIMER_COUNTDOWN_DISPLAY_VPIN);
@@ -53,6 +54,10 @@ void handleBlynkPinValueChange(int pin, String val) {
     case CYCLE_COOLDOWN_DISPLAY_VPIN:
       _cycleCooldownDisplay->set(val);
       break;
+    case MANUAL_CYCLE_VPIN:
+      _manualCycleVirtBtn->set(val);
+      Serial.println(String(val));
+      break;
     default:
       break;
   }
@@ -79,6 +84,7 @@ void setup() {
   _missedCycleCountDisplay->write(_missed_cycle_count);
   _cycleCooldownDisplay->write(formatSeconds(CYCLE_COOLDOWN_DELAY_S));
   _cycleTimingLed->off();
+  _manualCycleVirtBtn->off();
 
   String init_message = "System initialized";
   _infoDisplay->write(init_message);
@@ -91,6 +97,13 @@ void loop() {
   _wifi->checkConnection();
   _blynk->checkConnection();
   _blynk->run();
+
+  // manual cycle?
+  if (_manualCycleVirtBtn->isOn()) {
+    _manualCycleVirtBtn->off();
+    cycleIfEnabled(true);
+    return;
+  }
 
   if (_timer_started) {
     cycleIfReady();
@@ -128,10 +141,6 @@ void loop() {
   }
 
   delay(LOOP_DELAY_MS);
-}
-
-void sendCycleCommand() {
-  _gaClient->send(CYCLE_COMMAND);
 }
 
 void performCycleCooldown() {
@@ -189,34 +198,45 @@ void cycleIfReady() {
     // stop timing
     timerStop();
 
-    String message;
-    if (_cycleEnableVirtBtn->isOn()) {
-      sendCycleCommand();
-
-      message = "Cycle command sent";
-      _infoDisplay->write(message);
-      _logger->info(message);
-
-      _cycleCountDisplay->write(++_cycle_count);
-      _logger->info("Cycles since last reboot", String(_cycle_count));
-
-      performCycleCooldown();
-    }
-    else {
-      message = "Not cycling; disabled";
-      _infoDisplay->write(message);
-      _logger->info(message);
-
-      _missedCycleCountDisplay->write(++_missed_cycle_count);
-      _logger->info("Missed cycles since last reboot", String(_missed_cycle_count));
-
-      delay(2000);
-    }
+    cycleIfEnabled();
   }
   else {
     _infoDisplay->write("Timer running");
     int time_remaining_s = wait_time_s - elapsed_time_s;
     _timerCountdownDisplay->write(formatSeconds(time_remaining_s));
+  }
+}
+
+void cycleIfEnabled(bool manual) {
+  String message;
+  if (_cycleEnableVirtBtn->isOn()) {
+    _gaClient->send(CYCLE_COMMAND);
+
+    message = "Cycle command sent";
+    if (manual) {
+      message = "Cycle command manually initiated";
+    }
+
+    _infoDisplay->write(message);
+    _logger->info(message);
+
+    _cycleCountDisplay->write(++_cycle_count);
+
+    // small delay so logging doesn't crash
+    delay(250);
+    _logger->info("Cycles since last reboot", String(_cycle_count));
+
+    performCycleCooldown();
+  }
+  else {
+    message = "Not cycling; disabled";
+    _infoDisplay->write(message);
+    _logger->info(message);
+
+    _missedCycleCountDisplay->write(++_missed_cycle_count);
+    _logger->info("Missed cycles since last reboot", String(_missed_cycle_count));
+
+    delay(2000);
   }
 }
 

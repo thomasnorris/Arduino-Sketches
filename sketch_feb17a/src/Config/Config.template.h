@@ -45,6 +45,7 @@ inline const int MISSED_CYCLE_COUNT_DISPLAY_VPIN = 6;
 inline const int CYCLE_COOLDOWN_DISPLAY_VPIN = 7;
 inline const int CYCLE_TIMING_LED_VPIN = 8;
 inline const int SYSTEM_UPTIME_DISPLAY_VPIN = 9;
+inline const int MANUAL_CYCLE_VPIN = 10;
 
 // logger
 inline const String LOGGER_URL = "";
