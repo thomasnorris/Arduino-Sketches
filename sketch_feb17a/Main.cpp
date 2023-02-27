@@ -1,8 +1,8 @@
 #include "Main.h"
 
 // helpers
-auto _wifi = new Wifi(WIFI_SSID, WIFI_PASS, WIFI_LED_PIN, WIFI_LED_ON_VALUE);
-auto _ota = new ArdOTA(HOSTNAME);
+auto _wifi = new WifiClient(WIFI_SSID, WIFI_PASS, WIFI_LED_PIN, WIFI_LED_ON_VALUE);
+auto _ota = new OTAClient(HOSTNAME);
 auto _doorSensor = new Gpio(DOOR_PIN, DOOR_PIN_PINMODE);
 auto _doorLed = new Led(DOOR_LED_PIN, DOOR_LED_ON_VALUE);
 auto _gaClient = new GAClient(GA_URL, GA_AUTH_HEADER, GA_AUTH_TOKEN);
