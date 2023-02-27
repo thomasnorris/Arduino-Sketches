@@ -16,6 +16,7 @@ auto _cycleTimingLed = new VirtualLed(CYCLE_TIMING_LED_VPIN);
 // buttons
 auto _cycleEnableVirtBtn = new VirtualPin(CYCLE_ENABLE_VPIN);
 auto _manualCycleVirtBtn = new VirtualPin(MANUAL_CYCLE_VPIN);
+auto _cancelCountdownVirtBtn = new VirtualPin(CANCEL_COUNTDOWN_VPIN);
 
 // displays
 auto _timerCountdownDisplay = new VirtualPin(TIMER_COUNTDOWN_DISPLAY_VPIN);
@@ -56,7 +57,9 @@ void handleBlynkPinValueChange(int pin, String val) {
       break;
     case MANUAL_CYCLE_VPIN:
       _manualCycleVirtBtn->set(val);
-      Serial.println(String(val));
+      break;
+    case CANCEL_COUNTDOWN_VPIN:
+      _cancelCountdownVirtBtn->set(val);
       break;
     default:
       break;
@@ -85,6 +88,7 @@ void setup() {
   _cycleCooldownDisplay->write(formatSeconds(CYCLE_COOLDOWN_DELAY_S));
   _cycleTimingLed->off();
   _manualCycleVirtBtn->off();
+  _cancelCountdownVirtBtn->off();
 
   String init_message = "System initialized";
   _infoDisplay->write(init_message);
@@ -101,10 +105,33 @@ void loop() {
   // manual cycle?
   if (_manualCycleVirtBtn->isOn()) {
     _manualCycleVirtBtn->off();
+
+    // only stop the timer if enabled
+    if (_timer_started) {
+      timerStop();
+    }
+
     cycleIfEnabled(true);
     return;
   }
 
+  // stop the timer?
+  if (_cancelCountdownVirtBtn->isOn()) {
+    _cancelCountdownVirtBtn->off();
+
+    // only stop if it's running
+    if (_timer_started) {
+      _logger->info("Countdown manually cancelled");
+      timerStop();
+    }
+    else {
+      _infoDisplay->write("Timer not running");
+      delay(1000);
+    }
+    return;
+  }
+
+  // should we start the timer?
   if (_timer_started) {
     cycleIfReady();
   }
@@ -161,8 +188,9 @@ void performCycleCooldown() {
   }
 
   // reset
-  _cycleCooldownDisplay->write(formatSeconds(delay_s));
+  _cycleCooldownDisplay->write(formatSeconds(CYCLE_COOLDOWN_DELAY_S));
   _cycleInProgressVirtLed->off();
+  _manualCycleVirtBtn->off();
 }
 
 void timerStart() {
@@ -185,6 +213,8 @@ void timerStop() {
   _timer_started = false;
   _timer_allow_reset = false;
   _door_closed_after_cycle = false;
+
+  _timerCountdownDisplay->write(formatSeconds(WAIT_TIME_BEFORE_CYCLE_M * 60));
 }
 
 void cycleIfReady() {
@@ -193,7 +223,7 @@ void cycleIfReady() {
   int wait_time_s = WAIT_TIME_BEFORE_CYCLE_M * 60;
 
   if (elapsed_time_s >= wait_time_s) {
-    _timerCountdownDisplay->write(0);
+    _timerCountdownDisplay->write(formatSeconds(0));
 
     // stop timing
     timerStop();
@@ -210,6 +240,7 @@ void cycleIfReady() {
 void cycleIfEnabled(bool manual) {
   String message;
   if (_cycleEnableVirtBtn->isOn()) {
+    _infoDisplay->write("Cycling...");
     _gaClient->send(CYCLE_COMMAND);
 
     message = "Cycle command sent";
@@ -221,9 +252,6 @@ void cycleIfEnabled(bool manual) {
     _logger->info(message);
 
     _cycleCountDisplay->write(++_cycle_count);
-
-    // small delay so logging doesn't crash
-    delay(250);
     _logger->info("Cycles since last reboot", String(_cycle_count));
 
     performCycleCooldown();
@@ -236,7 +264,7 @@ void cycleIfEnabled(bool manual) {
     _missedCycleCountDisplay->write(++_missed_cycle_count);
     _logger->info("Missed cycles since last reboot", String(_missed_cycle_count));
 
-    delay(2000);
+    delay(1000);
   }
 }
 
