@@ -2,6 +2,7 @@
 
 // helpers
 auto _wifi = new Wifi(WIFI_SSID, WIFI_PASS, WIFI_LED_PIN, WIFI_LED_ON_VALUE);
+auto _ota = new ArdOTA(HOSTNAME);
 auto _doorSensor = new Gpio(DOOR_PIN, DOOR_PIN_PINMODE);
 auto _doorLed = new Led(DOOR_LED_PIN, DOOR_LED_ON_VALUE);
 auto _gaClient = new GAClient(GA_URL, GA_AUTH_HEADER, GA_AUTH_TOKEN);
@@ -77,8 +78,9 @@ void setup() {
   _blynk->configure();
   _blynk->connect();
   _blynk->run();
+  _ota->begin();
 
-  // init bylnk i/o 
+  // init bylnk i/o
   _doorVirtLed->off();
   _cycleInProgressVirtLed->off();
   _cycleEnableVirtBtn->off();
@@ -97,10 +99,11 @@ void setup() {
 
 void loop() {
   updateUptime();
-  
+
   _wifi->checkConnection();
   _blynk->checkConnection();
   _blynk->run();
+  _ota->handle();
 
   // manual cycle?
   if (_manualCycleVirtBtn->isOn()) {
@@ -146,7 +149,7 @@ void loop() {
     _door_closed_after_cycle = true;
 
     if (!_timer_started) {
-      _infoDisplay->write("Ready for cycle");      
+      _infoDisplay->write("Ready for cycle");
     }
   }
   else {
@@ -179,7 +182,7 @@ void performCycleCooldown() {
   // count down and update display
   while (delay_s != 0) {
     _cycleCooldownDisplay->write(formatSeconds(--delay_s));
-    
+
     if (delay_s == CYCLE_COOLDOWN_DELAY_S - 2) {
       _infoDisplay->write("Cycle in cooldown");
     }

@@ -4,6 +4,7 @@
 // general
 inline const int BAUD = 9600;
 inline const int LOOP_DELAY_MS = 0;
+inline const String HOSTNAME = "LitterBoxCycler";
 
 // wifi
 inline const String WIFI_SSID = "";
