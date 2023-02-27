@@ -237,6 +237,7 @@ void cycleIfReady() {
     _infoDisplay->write("Timer running");
     int time_remaining_s = wait_time_s - elapsed_time_s;
     _timerCountdownDisplay->write(formatSeconds(time_remaining_s));
+    _doorLed->toggleOnOff(500);
   }
 }
 
