@@ -93,7 +93,7 @@ void setup() {
   _cancelCountdownVirtBtn->off();
 
   // enable cycling
-  _cycleEnableVirtBtn->off();
+  _cycleEnableVirtBtn->on();
 
   String init_message = "System initialized";
   _infoDisplay->write(init_message);
