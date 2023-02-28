@@ -47,6 +47,9 @@ inline const int CYCLE_COOLDOWN_DISPLAY_VPIN = 7;
 inline const int CYCLE_TIMING_LED_VPIN = 8;
 inline const int SYSTEM_UPTIME_DISPLAY_VPIN = 9;
 inline const int MANUAL_CYCLE_VPIN = 10;
+inline const int CANCEL_COUNTDOWN_VPIN = 11;
+inline const int LAST_CYCLE_TIME_VPIN = 12;
+inline const int HARD_RESET_VPIN = 13;
 
 // logger
 inline const String LOGGER_URL = "";

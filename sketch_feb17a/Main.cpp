@@ -19,6 +19,7 @@ auto _cycleTimingLed = new VirtualLed(CYCLE_TIMING_LED_VPIN);
 auto _cycleEnableVirtBtn = new VirtualPin(CYCLE_ENABLE_VPIN);
 auto _manualCycleVirtBtn = new VirtualPin(MANUAL_CYCLE_VPIN);
 auto _cancelCountdownVirtBtn = new VirtualPin(CANCEL_COUNTDOWN_VPIN);
+auto _hardResetVirtBtn = new VirtualPin(HARD_RESET_VPIN);
 
 // displays
 auto _timerCountdownDisplay = new VirtualPin(TIMER_COUNTDOWN_DISPLAY_VPIN);
@@ -27,6 +28,7 @@ auto _cycleCountDisplay = new VirtualPin(CYCLE_COUNT_DISPLAY_VPIN);
 auto _missedCycleCountDisplay = new VirtualPin(MISSED_CYCLE_COUNT_DISPLAY_VPIN);
 auto _cycleCooldownDisplay = new VirtualPin(CYCLE_COOLDOWN_DISPLAY_VPIN);
 auto _uptimeDisplay = new VirtualPin(SYSTEM_UPTIME_DISPLAY_VPIN);
+auto _lastCycleTimeDisplay = new VirtualPin(LAST_CYCLE_TIME_VPIN);
 
 // variables
 std::chrono::time_point<std::chrono::system_clock> _start_time;
@@ -63,6 +65,11 @@ void handleBlynkPinValueChange(int pin, String val) {
     case CANCEL_COUNTDOWN_VPIN:
       _cancelCountdownVirtBtn->set(val);
       break;
+    case LAST_CYCLE_TIME_VPIN:
+      _lastCycleTimeDisplay->set(val);
+    case HARD_RESET_VPIN:
+      _hardResetVirtBtn->set(val);
+      break;
     default:
       break;
   }
@@ -72,7 +79,7 @@ void setup() {
   Serial.begin(BAUD);
   while (!Serial) {}
 
-  _uptime_start = _th->getTimeNow();
+  _uptime_start = _th->getClockTimeNow();
 
   // init connections
   _wifi->connect();
@@ -80,17 +87,21 @@ void setup() {
   _blynk->connect();
   _blynk->run();
   _ota->begin();
+  _th->begin();
+  _th->update();
 
   // init bylnk i/o
   _doorVirtLed->off();
   _cycleInProgressVirtLed->off();
-  _timerCountdownDisplay->write(_th->formatSeconds(WAIT_TIME_BEFORE_CYCLE_M * 60));
+  _timerCountdownDisplay->write(_th->prettyFormatS(WAIT_TIME_BEFORE_CYCLE_M * 60));
   _cycleCountDisplay->write(_cycle_count);
   _missedCycleCountDisplay->write(_missed_cycle_count);
-  _cycleCooldownDisplay->write(_th->formatSeconds(CYCLE_COOLDOWN_DELAY_S));
+  _cycleCooldownDisplay->write(_th->prettyFormatS(CYCLE_COOLDOWN_DELAY_S));
   _cycleTimingLed->off();
   _manualCycleVirtBtn->off();
   _cancelCountdownVirtBtn->off();
+  _lastCycleTimeDisplay->write("None");
+  _hardResetVirtBtn->off();
 
   // enable cycling
   _cycleEnableVirtBtn->on();
@@ -107,6 +118,15 @@ void loop() {
   _blynk->checkConnection();
   _blynk->run();
   _ota->handle();
+  _th->update();
+
+  // hard reset?
+  if (_hardResetVirtBtn->isOn()) {
+    _hardResetVirtBtn->off();
+
+    ESP.restart();
+    return;
+  }
 
   // manual cycle?
   if (_manualCycleVirtBtn->isOn()) {
@@ -180,11 +200,11 @@ void performCycleCooldown() {
   auto delay_s = CYCLE_COOLDOWN_DELAY_S;
 
   _cycleInProgressVirtLed->on();
-  _cycleCooldownDisplay->write(_th->formatSeconds(delay_s));
+  _cycleCooldownDisplay->write(_th->prettyFormatS(delay_s));
 
   // count down and update display
   while (delay_s != 0) {
-    _cycleCooldownDisplay->write(_th->formatSeconds(--delay_s));
+    _cycleCooldownDisplay->write(_th->prettyFormatS(--delay_s));
 
     if (delay_s == CYCLE_COOLDOWN_DELAY_S - 2) {
       _infoDisplay->write("Cycle in cooldown");
@@ -194,7 +214,7 @@ void performCycleCooldown() {
   }
 
   // reset
-  _cycleCooldownDisplay->write(_th->formatSeconds(CYCLE_COOLDOWN_DELAY_S));
+  _cycleCooldownDisplay->write(_th->prettyFormatS(CYCLE_COOLDOWN_DELAY_S));
   _cycleInProgressVirtLed->off();
   _manualCycleVirtBtn->off();
 }
@@ -207,7 +227,7 @@ void timerStart() {
 
   _timer_started = true;
   _timer_allow_reset = false;
-  _start_time = _th->getTimeNow();
+  _start_time = _th->getClockTimeNow();
 }
 
 void timerStop() {
@@ -220,16 +240,16 @@ void timerStop() {
   _timer_allow_reset = false;
   _door_closed_after_cycle = false;
 
-  _timerCountdownDisplay->write(_th->formatSeconds(WAIT_TIME_BEFORE_CYCLE_M * 60));
+  _timerCountdownDisplay->write(_th->prettyFormatS(WAIT_TIME_BEFORE_CYCLE_M * 60));
 }
 
 void cycleIfReady() {
-  auto current_time = _th->getTimeNow();
+  auto current_time = _th->getClockTimeNow();
   int elapsed_time_s = _th->getElapsedTimeS(_start_time, current_time);
   int wait_time_s = WAIT_TIME_BEFORE_CYCLE_M * 60;
 
   if (elapsed_time_s >= wait_time_s) {
-    _timerCountdownDisplay->write(_th->formatSeconds(0));
+    _timerCountdownDisplay->write(_th->prettyFormatS(0));
 
     // stop timing
     timerStop();
@@ -239,12 +259,19 @@ void cycleIfReady() {
   else {
     _infoDisplay->write("Timer running");
     int time_remaining_s = wait_time_s - elapsed_time_s;
-    _timerCountdownDisplay->write(_th->formatSeconds(time_remaining_s));
+    _timerCountdownDisplay->write(_th->prettyFormatS(time_remaining_s));
+
+    // toggle LEDs
+    _cycleTimingLed->on();
     _doorLed->toggleOnOff(500);
+    _cycleTimingLed->off();
   }
 }
 
 void cycleIfEnabled(bool manual) {
+  // update display
+  _lastCycleTimeDisplay->write(_th->getCurrentLocalDateTime());
+
   String message;
   if (_cycleEnableVirtBtn->isOn()) {
     _infoDisplay->write("Cycling...");
@@ -276,7 +303,7 @@ void cycleIfEnabled(bool manual) {
 }
 
 void updateUptime() {
-  auto current_time = _th->getTimeNow();
+  auto current_time = _th->getClockTimeNow();
   int uptime_s = _th->getElapsedTimeS(_uptime_start, current_time);
-  _uptimeDisplay->write(_th->formatSeconds(uptime_s));
+  _uptimeDisplay->write(_th->prettyFormatS(uptime_s));
 }
