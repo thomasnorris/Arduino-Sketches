@@ -6,6 +6,17 @@ inline const int BAUD = 9600;
 inline const int LOOP_DELAY_MS = 0;
 inline const String HOSTNAME = "LitterBoxCycler";
 
+// ArduinoData db connection settings
+inline const int ARDUINO_DATA_APP_ID = 11;
+inline const String ARDUINO_DATA_URL = "";
+inline const String ARDUINO_DATA_USERNAME = "";
+inline const String ARDUINO_DATA_PASSWORD = "";
+inline const int ARDUINO_DATA_PORT = 3360;
+
+// ArduinoData db data point types for corresponding app_ID
+inline const int CYCLE_COUNT_DPT = 1;
+inline const int MISSED_CYCLE_COUNT_DPT = 2;
+
 // wifi
 inline const String WIFI_SSID = "";
 inline const String WIFI_PASS = "";

@@ -9,6 +9,7 @@ auto _gaClient = new GAClient(GA_URL, GA_AUTH_HEADER, GA_AUTH_TOKEN);
 auto _blynk = new BlynkServer(BLYNK_IP, BLYNK_PORT, BLYNK_AUTH_TOKEN);
 auto _logger = new LoggerClient(LOGGER_URL, LOGGER_AUTH_HEADER, LOGGER_AUTH_TOKEN, LOGGER_APP_ID);
 auto _th = new TimeHelpers();
+auto _db = new ArduinoData(ARDUINO_DATA_APP_ID, ARDUINO_DATA_URL, ARDUINO_DATA_USERNAME, ARDUINO_DATA_PASSWORD, ARDUINO_DATA_PORT);
 
 // leds
 auto _doorVirtLed = new VirtualLed(DOOR_LED_VPIN);
@@ -83,6 +84,7 @@ void setup() {
 
   // init connections
   _wifi->connect();
+  _db->testConnect();
   _blynk->configure();
   _blynk->connect();
   _blynk->run();
@@ -286,6 +288,7 @@ void cycleIfEnabled(bool manual) {
 
     _cycleCountDisplay->write(++_cycle_count);
     _logger->info("Cycles since last reboot", String(_cycle_count));
+    _db->insertDataPoint(CYCLE_COUNT_DPT, 1);
 
     performCycleCooldown();
   }
@@ -296,6 +299,7 @@ void cycleIfEnabled(bool manual) {
 
     _missedCycleCountDisplay->write(++_missed_cycle_count);
     _logger->info("Missed cycles since last reboot", String(_missed_cycle_count));
+    _db->insertDataPoint(MISSED_CYCLE_COUNT_DPT, 1);
   }
 }
 
