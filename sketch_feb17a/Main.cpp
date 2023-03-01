@@ -109,6 +109,7 @@ void setup() {
   String init_message = "System initialized";
   _infoDisplay->write(init_message);
   _logger->init(init_message);
+  _blynk->notify(init_message);
 }
 
 void loop() {
@@ -152,7 +153,7 @@ void loop() {
     }
     else {
       _infoDisplay->write("Timer not running");
-      delay(1000);
+      delay(500);
     }
     return;
   }
@@ -224,6 +225,7 @@ void timerStart() {
   _cycleTimingLed->on();
   _infoDisplay->write(message);
   _logger->info(message);
+  _blynk->notify(message);
 
   _timer_started = true;
   _timer_allow_reset = false;
@@ -235,6 +237,7 @@ void timerStop() {
   _cycleTimingLed->off();
   _infoDisplay->write(message);
   _logger->info(message);
+  _blynk->notify(message);
 
   _timer_started = false;
   _timer_allow_reset = false;
@@ -260,11 +263,7 @@ void cycleIfReady() {
     _infoDisplay->write("Timer running");
     int time_remaining_s = wait_time_s - elapsed_time_s;
     _timerCountdownDisplay->write(_th->prettyFormatS(time_remaining_s));
-
-    // toggle LEDs
-    _cycleTimingLed->on();
     _doorLed->toggleOnOff(500);
-    _cycleTimingLed->off();
   }
 }
 
@@ -297,8 +296,6 @@ void cycleIfEnabled(bool manual) {
 
     _missedCycleCountDisplay->write(++_missed_cycle_count);
     _logger->info("Missed cycles since last reboot", String(_missed_cycle_count));
-
-    delay(1000);
   }
 }
 
