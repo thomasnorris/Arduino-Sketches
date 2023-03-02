@@ -30,6 +30,8 @@ auto _missedCycleCountDisplay = new VirtualPin(MISSED_CYCLE_COUNT_DISPLAY_VPIN);
 auto _cycleCooldownDisplay = new VirtualPin(CYCLE_COOLDOWN_DISPLAY_VPIN);
 auto _uptimeDisplay = new VirtualPin(SYSTEM_UPTIME_DISPLAY_VPIN);
 auto _lastCycleTimeDisplay = new VirtualPin(LAST_CYCLE_TIME_VPIN);
+auto _totalCyclesTodayDisplay = new VirtualPin(TOTAL_CYCLES_TODAY);
+auto _totalMissedCyclesTodayDisplay = new VirtualPin(TOTAL_MISSED_CYCLES_TODAY);
 
 // variables
 std::chrono::time_point<std::chrono::system_clock> _start_time;
@@ -71,6 +73,12 @@ void handleBlynkPinValueChange(int pin, String val) {
     case HARD_RESET_VPIN:
       _hardResetVirtBtn->set(val);
       break;
+    case TOTAL_CYCLES_TODAY:
+      _totalCyclesTodayDisplay->set(val);
+      break;
+    case TOTAL_MISSED_CYCLES_TODAY:
+      _totalMissedCyclesTodayDisplay->set(val);
+      break;
     default:
       break;
   }
@@ -84,7 +92,6 @@ void setup() {
 
   // init connections
   _wifi->connect();
-  _db->testConnect();
   _blynk->configure();
   _blynk->connect();
   _blynk->run();
@@ -102,12 +109,17 @@ void setup() {
   _cycleTimingLed->off();
   _manualCycleVirtBtn->off();
   _cancelCountdownVirtBtn->off();
-  _lastCycleTimeDisplay->write("None");
   _hardResetVirtBtn->off();
+
+  // get and set persistent data
+  _totalCyclesTodayDisplay->write(_db->getSumToday(CYCLE_COUNT_DPT));
+  _totalMissedCyclesTodayDisplay->write(_db->getSumToday(MISSED_CYCLE_COUNT_DPT));
+  _lastCycleTimeDisplay->write(_db->getLast(LAST_CYCLE_TIME_DPT));
 
   // enable cycling
   _cycleEnableVirtBtn->on();
 
+  // respond done
   String init_message = "System initialized";
   _infoDisplay->write(init_message);
   _logger->init(init_message);
@@ -126,6 +138,8 @@ void loop() {
   // hard reset?
   if (_hardResetVirtBtn->isOn()) {
     _hardResetVirtBtn->off();
+
+    _logger->warning("Hard reset via Blynk");
 
     ESP.restart();
     return;
@@ -239,7 +253,6 @@ void timerStop() {
   _cycleTimingLed->off();
   _infoDisplay->write(message);
   _logger->info(message);
-  _blynk->notify(message);
 
   _timer_started = false;
   _timer_allow_reset = false;
@@ -271,7 +284,9 @@ void cycleIfReady() {
 
 void cycleIfEnabled(bool manual) {
   // update display
-  _lastCycleTimeDisplay->write(_th->getCurrentLocalDateTime());
+  auto localDateTime = _th->getCurrentLocalDateTime();
+  _lastCycleTimeDisplay->write(localDateTime);
+  _db->updateDataPoint(LAST_CYCLE_TIME_DPT, localDateTime);
 
   String message;
   if (_cycleEnableVirtBtn->isOn()) {
@@ -285,10 +300,11 @@ void cycleIfEnabled(bool manual) {
 
     _infoDisplay->write(message);
     _logger->info(message);
+    _blynk->notify(message);
 
     _cycleCountDisplay->write(++_cycle_count);
-    _logger->info("Cycles since last reboot", String(_cycle_count));
     _db->insertDataPoint(CYCLE_COUNT_DPT, 1);
+    _totalCyclesTodayDisplay->write(_db->getSumToday(CYCLE_COUNT_DPT));
 
     performCycleCooldown();
   }
@@ -298,8 +314,8 @@ void cycleIfEnabled(bool manual) {
     _logger->info(message);
 
     _missedCycleCountDisplay->write(++_missed_cycle_count);
-    _logger->info("Missed cycles since last reboot", String(_missed_cycle_count));
     _db->insertDataPoint(MISSED_CYCLE_COUNT_DPT, 1);
+    _totalMissedCyclesTodayDisplay->write(_db->getSumToday(MISSED_CYCLE_COUNT_DPT));
   }
 }
 

@@ -19,10 +19,12 @@ void loop();
 
 void handleBlynkPinValueChange(int pin, String value);
 
+void getAndSetDataForToday();
+
 void timerStart();
 void timerStop();
 void cycleIfReady();
 void updateUptime();
-void cycleIfEnabled(bool manual = false); 
+void cycleIfEnabled(bool manual = false);
 
 #endif

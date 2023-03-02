@@ -13,9 +13,10 @@ inline const String ARDUINO_DATA_USERNAME = "";
 inline const String ARDUINO_DATA_PASSWORD = "";
 inline const int ARDUINO_DATA_PORT = 3360;
 
-// ArduinoData db data point types for corresponding app_ID
+// ArduinoData.DataPointTypes (DPT) for corresponding ARDUINO_DATA_APP_ID (above)
 inline const int CYCLE_COUNT_DPT = 1;
 inline const int MISSED_CYCLE_COUNT_DPT = 2;
+inline const int LAST_CYCLE_TIME_DPT = 3;
 
 // wifi
 inline const String WIFI_SSID = "";
@@ -61,6 +62,8 @@ inline const int MANUAL_CYCLE_VPIN = 10;
 inline const int CANCEL_COUNTDOWN_VPIN = 11;
 inline const int LAST_CYCLE_TIME_VPIN = 12;
 inline const int HARD_RESET_VPIN = 13;
+inline const int TOTAL_CYCLES_TODAY = 14;
+inline const int TOTAL_MISSED_CYCLES_TODAY = 15;
 
 // logger
 inline const String LOGGER_URL = "";
