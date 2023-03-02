@@ -124,7 +124,6 @@ void setup() {
 
   // respond done
   String init_message = "System initialized";
-  _infoDisplay->write(init_message);
   _logger->init(init_message, _wifi->getIPAddress());
   _blynk->notify(init_message);
 }
