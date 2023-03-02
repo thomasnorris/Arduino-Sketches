@@ -10,10 +10,14 @@
 #include "src/Arduino-Helpers/TimeHelpersClass/TimeHelpersClass.h"
 #include "src/Arduino-Helpers/WifiClass/WifiClass.h"
 #include "src/Arduino-Helpers/BlynkClasses/BlynkClasses.h"
+#include "src/Arduino-Helpers/GpioClass/GpioClass.h"
+#include "src/Arduino-Helpers/LedClass/LedClass.h"
 
 void setup();
 void loop();
 
 void handleBlynkPinValueChange(int pin, String value);
+
+void updateUptime();
 
 #endif

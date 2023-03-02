@@ -30,4 +30,16 @@ inline const String LOGGER_AUTH_HEADER = "";
 inline const String LOGGER_AUTH_TOKEN = "";
 inline const int LOGGER_APP_ID = -1; // get from Common.Apps
 
+// door sensor
+inline const byte DOOR_PIN = D1; // gpio 5
+inline const byte DOOR_PIN_PINMODE = INPUT_PULLUP; // default floating to be HIGH
+
+// door led
+inline const byte DOOR_LED_PIN = D0;
+inline const byte DOOR_LED_ON_VALUE = LOW;
+
+// blynk pins
+inline const int DOOR_LED_VPIN = 1;
+inline const int SYSTEM_UPTIME_DISPLAY_VPIN = 2;
+
 #endif
