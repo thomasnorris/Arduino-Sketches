@@ -62,6 +62,9 @@ void handleBlynkPinValueChange(int pin, String val) {
     case CYCLE_COOLDOWN_DISPLAY_VPIN:
       _cycleCooldownDisplay->set(val);
       break;
+    case SYSTEM_UPTIME_DISPLAY_VPIN:
+      _uptimeDisplay->set(val);
+      break;
     case MANUAL_CYCLE_VPIN:
       _manualCycleVirtBtn->set(val);
       break;
@@ -122,7 +125,7 @@ void setup() {
   // respond done
   String init_message = "System initialized";
   _infoDisplay->write(init_message);
-  _logger->init(init_message);
+  _logger->init(init_message, _wifi->getIPAddress());
   _blynk->notify(init_message);
 }
 
