@@ -39,7 +39,10 @@ inline const byte DOOR_LED_PIN = D0;
 inline const byte DOOR_LED_ON_VALUE = LOW;
 
 // blynk pins
-inline const int DOOR_LED_VPIN = 1;
-inline const int SYSTEM_UPTIME_DISPLAY_VPIN = 2;
+inline const int DOOR_LED_VPIN = 0;
+inline const int SYSTEM_UPTIME_DISPLAY_VPIN = 1;
+inline const int LAST_OPENED_TIME_VPIN = 2;
+inline const int LAST_CLOSED_TIME_VPIN = 3;
+inline const int COUNT_TIMES_OPENED_VPIN = 4; // no count closed vpin
 
 #endif

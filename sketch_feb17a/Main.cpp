@@ -15,15 +15,29 @@ auto _doorVirtLed = new VirtualLed(DOOR_LED_VPIN);
 
 // blynk displays
 auto _uptimeDisplay = new VirtualPin(SYSTEM_UPTIME_DISPLAY_VPIN);
+auto _lastTimeOpenedDisplay = new VirtualPin(LAST_OPENED_TIME_VPIN);
+auto _lastTimeClosedDisplay = new VirtualPin(LAST_CLOSED_TIME_VPIN);
+auto _countTimesOpenedDisplay = new VirtualPin(COUNT_TIMES_OPENED_VPIN);
 
 // variables
 std::chrono::time_point<std::chrono::system_clock> _uptime_start;
+bool last_time_opened_recorded = false;
+bool last_time_closed_recorded = false;
 
 // handle blynk virtual pin value changes here
 void handleBlynkPinValueChange(int pin, String val) {
   switch (pin) {
     case SYSTEM_UPTIME_DISPLAY_VPIN:
       _uptimeDisplay->set(val);
+      break;
+    case LAST_OPENED_TIME_VPIN:
+      _lastTimeOpenedDisplay->set(val);
+      break;
+    case LAST_CLOSED_TIME_VPIN:
+      _lastTimeClosedDisplay->set(val);
+      break;
+    case COUNT_TIMES_OPENED_VPIN:
+      _countTimesOpenedDisplay->set(val);
       break;
     default:
       break;
@@ -48,6 +62,11 @@ void setup() {
   // init bylnk i/o
   _doorVirtLed->off();
 
+  // get and set persistent data
+  _countTimesOpenedDisplay->write(_db->getSumToday(DOOR_OPENED_DPT));
+  _lastTimeOpenedDisplay->write(_db->getLast(LAST_OPENED_TIME_DPT));
+  _lastTimeClosedDisplay->write(_db->getLast(LAST_CLOSED_TIME_DPT));
+
   // respond done
   String init_message = "System initialized";
   _logger->init(init_message, _wifi->getIPAddress());
@@ -62,6 +81,46 @@ void loop() {
   _blynk->run();
   _ota->handle();
   _th->update();
+
+  auto localDateTime = _th->getCurrentLocalDateTime();
+
+  // low means the sensor has made a connection
+  if (_doorSensor->isLow()) {
+    _doorLed->on();
+    _doorVirtLed->on();
+
+    last_time_opened_recorded = false;
+
+    if (!last_time_closed_recorded) {
+      last_time_closed_recorded = true;
+
+      // record
+      _lastTimeClosedDisplay->write(localDateTime);
+      _db->updateDataPoint(LAST_CLOSED_TIME_DPT, localDateTime);
+      _db->insertDataPoint(DOOR_CLOSED_DPT, 1);
+      _logger->info("Door closed");
+      _blynk->notify("Garage door closed");
+    }
+  }
+  else {
+    _doorLed->off();
+    _doorVirtLed->off();
+
+    last_time_closed_recorded = false;
+
+    if (!last_time_opened_recorded) {
+      last_time_opened_recorded = true;
+
+      // record
+      _lastTimeOpenedDisplay->write(localDateTime);
+      _db->updateDataPoint(LAST_OPENED_TIME_DPT, localDateTime);
+      _db->insertDataPoint(DOOR_OPENED_DPT, 1);
+      _logger->info("Door opened");
+      _blynk->notify("Garage door opened");
+
+      _countTimesOpenedDisplay->write(_db->getSumToday(DOOR_OPENED_DPT));
+    }
+  }
 
   delay(LOOP_DELAY_MS);
 }
