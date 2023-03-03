@@ -3,6 +3,7 @@
 
 #include <Arduino.h>
 #include <string>
+#include <CronAlarms.h>
 #include "src/Config/Config.h"
 #include "src/Arduino-Helpers/ArduinoDataClass/ArduinoDataClass.h"
 #include "src/Arduino-Helpers/OTAClass/OTAClass.h"
@@ -26,5 +27,6 @@ void timerStop();
 void cycleIfReady();
 void updateUptime();
 void cycleIfEnabled(bool manual = false);
+void refreshDailyData();
 
 #endif

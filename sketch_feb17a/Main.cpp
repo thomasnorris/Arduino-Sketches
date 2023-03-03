@@ -25,8 +25,6 @@ auto _hardResetVirtBtn = new VirtualPin(HARD_RESET_VPIN);
 // displays
 auto _timerCountdownDisplay = new VirtualPin(TIMER_COUNTDOWN_DISPLAY_VPIN);
 auto _infoDisplay = new VirtualPin(INFO_DISPLAY_VPIN);
-auto _cycleCountDisplay = new VirtualPin(CYCLE_COUNT_DISPLAY_VPIN);
-auto _missedCycleCountDisplay = new VirtualPin(MISSED_CYCLE_COUNT_DISPLAY_VPIN);
 auto _cycleCooldownDisplay = new VirtualPin(CYCLE_COOLDOWN_DISPLAY_VPIN);
 auto _uptimeDisplay = new VirtualPin(SYSTEM_UPTIME_DISPLAY_VPIN);
 auto _lastCycleTimeDisplay = new VirtualPin(LAST_CYCLE_TIME_VPIN);
@@ -38,8 +36,6 @@ std::chrono::time_point<std::chrono::system_clock> _start_time;
 bool _timer_started = false;
 bool _timer_allow_reset = false;
 bool _door_closed_after_cycle = false;
-int _cycle_count = 0;
-int _missed_cycle_count = 0;
 std::chrono::time_point<std::chrono::system_clock> _uptime_start;
 
 // handle blynk virtual pin value changes here
@@ -52,12 +48,6 @@ void handleBlynkPinValueChange(int pin, String val) {
       _timerCountdownDisplay->set(val);
     case INFO_DISPLAY_VPIN:
       _infoDisplay->set(val);
-      break;
-    case CYCLE_COUNT_DISPLAY_VPIN:
-      _cycleCountDisplay->set(val);
-      break;
-    case MISSED_CYCLE_COUNT_DISPLAY_VPIN:
-      _missedCycleCountDisplay->set(val);
       break;
     case CYCLE_COOLDOWN_DISPLAY_VPIN:
       _cycleCooldownDisplay->set(val);
@@ -106,8 +96,6 @@ void setup() {
   _doorVirtLed->off();
   _cycleInProgressVirtLed->off();
   _timerCountdownDisplay->write(_th->prettyFormatS(WAIT_TIME_BEFORE_CYCLE_M * 60));
-  _cycleCountDisplay->write(_cycle_count);
-  _missedCycleCountDisplay->write(_missed_cycle_count);
   _cycleCooldownDisplay->write(_th->prettyFormatS(CYCLE_COOLDOWN_DELAY_S));
   _cycleTimingLed->off();
   _manualCycleVirtBtn->off();
@@ -119,6 +107,9 @@ void setup() {
   _totalMissedCyclesTodayDisplay->write(_db->getSumToday(MISSED_CYCLE_COUNT_DPT));
   _lastCycleTimeDisplay->write(_db->getLast(LAST_CYCLE_TIME_DPT));
 
+  // cron schedules
+  Cron.create(const_cast<char*>(DAILY_DATA_REFRESH_CRON.c_str()), refreshDailyData, false);
+
   // enable cycling
   _cycleEnableVirtBtn->on();
 
@@ -129,6 +120,7 @@ void setup() {
 }
 
 void loop() {
+  Cron.delay();
   updateUptime();
 
   _wifi->checkConnection();
@@ -213,6 +205,13 @@ void loop() {
   }
 
   delay(LOOP_DELAY_MS);
+}
+
+void refreshDailyData() {
+  _totalCyclesTodayDisplay->write(_db->getSumToday(CYCLE_COUNT_DPT));
+  _totalMissedCyclesTodayDisplay->write(_db->getSumToday(MISSED_CYCLE_COUNT_DPT));
+  _lastCycleTimeDisplay->write(_db->getLast(LAST_CYCLE_TIME_DPT));
+  _logger->info("Daily data refreshed");
 }
 
 void performCycleCooldown() {
@@ -304,7 +303,6 @@ void cycleIfEnabled(bool manual) {
     _logger->info(message);
     _blynk->notify(message);
 
-    _cycleCountDisplay->write(++_cycle_count);
     _db->insertDataPoint(CYCLE_COUNT_DPT, 1);
     _totalCyclesTodayDisplay->write(_db->getSumToday(CYCLE_COUNT_DPT));
 
@@ -315,7 +313,6 @@ void cycleIfEnabled(bool manual) {
     _infoDisplay->write(message);
     _logger->info(message);
 
-    _missedCycleCountDisplay->write(++_missed_cycle_count);
     _db->insertDataPoint(MISSED_CYCLE_COUNT_DPT, 1);
     _totalMissedCyclesTodayDisplay->write(_db->getSumToday(MISSED_CYCLE_COUNT_DPT));
   }
