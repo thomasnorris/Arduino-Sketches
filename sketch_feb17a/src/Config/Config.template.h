@@ -21,13 +21,14 @@ inline const byte WIFI_LED_ON_VALUE = LOW;
 
 // blynk server settings
 inline const String BLYNK_IP = "192.168.1.63";
-inline const int BLYNK_PORT = 8442;
+inline const int BLYNK_PORT = 8442; // default is 8442
 inline const String BLYNK_AUTH_TOKEN = "";
 
-// logger
-inline const String LOGGER_URL = "";
-inline const String LOGGER_AUTH_HEADER = "";
-inline const String LOGGER_AUTH_TOKEN = "";
+// AppLogs db connection settings
 inline const int LOGGER_APP_ID = -1; // get from Common.Apps
+inline const String LOGGER_URL = "";
+inline const String LOGGER_USERNAME = "";
+inline const String LOGGER_PASSWORD = "";
+inline const int LOGGER_PORT = 3306; // default is 3306
 
 #endif
