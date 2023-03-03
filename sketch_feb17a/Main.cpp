@@ -9,7 +9,7 @@ auto _gaClient = new GAClient(GA_URL, GA_AUTH_HEADER, GA_AUTH_TOKEN);
 auto _blynk = new BlynkServer(BLYNK_IP, BLYNK_PORT, BLYNK_AUTH_TOKEN);
 auto _logger = new LoggerClient(LOGGER_APP_ID, LOGGER_URL, LOGGER_USERNAME, LOGGER_PASSWORD, LOGGER_PORT);
 auto _th = new TimeHelpers();
-auto _db = new ArduinoData(ARDUINO_DATA_APP_ID, ARDUINO_DATA_URL, ARDUINO_DATA_USERNAME, ARDUINO_DATA_PASSWORD, ARDUINO_DATA_PORT);
+auto _data = new ArduinoDataClient(ARDUINO_DATA_APP_ID, ARDUINO_DATA_URL, ARDUINO_DATA_USERNAME, ARDUINO_DATA_PASSWORD, ARDUINO_DATA_PORT);
 
 // leds
 auto _doorVirtLed = new VirtualLed(DOOR_LED_VPIN);
@@ -104,9 +104,9 @@ void setup() {
   _hardResetVirtBtn->off();
 
   // get and set persistent data
-  _totalCyclesTodayDisplay->write(_db->getSumToday(CYCLE_COUNT_DPT));
-  _totalMissedCyclesTodayDisplay->write(_db->getSumToday(MISSED_CYCLE_COUNT_DPT));
-  _lastCycleTimeDisplay->write(_db->getLast(LAST_CYCLE_TIME_DPT));
+  _totalCyclesTodayDisplay->write(_data->getSumToday(CYCLE_COUNT_DPT));
+  _totalMissedCyclesTodayDisplay->write(_data->getSumToday(MISSED_CYCLE_COUNT_DPT));
+  _lastCycleTimeDisplay->write(_data->getLast(LAST_CYCLE_TIME_DPT));
 
   // cron schedules
   Cron.create(const_cast<char*>(DAILY_DATA_REFRESH_CRON.c_str()), refreshDailyData, false);
@@ -212,9 +212,9 @@ void loop() {
 }
 
 void refreshDailyData() {
-  _totalCyclesTodayDisplay->write(_db->getSumToday(CYCLE_COUNT_DPT));
-  _totalMissedCyclesTodayDisplay->write(_db->getSumToday(MISSED_CYCLE_COUNT_DPT));
-  _lastCycleTimeDisplay->write(_db->getLast(LAST_CYCLE_TIME_DPT));
+  _totalCyclesTodayDisplay->write(_data->getSumToday(CYCLE_COUNT_DPT));
+  _totalMissedCyclesTodayDisplay->write(_data->getSumToday(MISSED_CYCLE_COUNT_DPT));
+  _lastCycleTimeDisplay->write(_data->getLast(LAST_CYCLE_TIME_DPT));
   _logger->info("Daily data refreshed");
 }
 
@@ -291,7 +291,7 @@ void cycleIfEnabled(bool manual) {
   // update display
   auto localDateTime = _th->getCurrentLocalDateTime12hr();
   _lastCycleTimeDisplay->write(localDateTime);
-  _db->updateDataPoint(LAST_CYCLE_TIME_DPT, localDateTime);
+  _data->updateDataPoint(LAST_CYCLE_TIME_DPT, localDateTime);
 
   String message;
   if (_cycleEnableVirtBtn->isOn()) {
@@ -307,8 +307,8 @@ void cycleIfEnabled(bool manual) {
     _logger->info(message);
     _blynk->notify(message);
 
-    _db->insertDataPoint(CYCLE_COUNT_DPT, 1);
-    _totalCyclesTodayDisplay->write(_db->getSumToday(CYCLE_COUNT_DPT));
+    _data->insertDataPoint(CYCLE_COUNT_DPT, 1);
+    _totalCyclesTodayDisplay->write(_data->getSumToday(CYCLE_COUNT_DPT));
 
     performCycleCooldown();
   }
@@ -317,8 +317,8 @@ void cycleIfEnabled(bool manual) {
     _infoDisplay->write(message);
     _logger->info(message);
 
-    _db->insertDataPoint(MISSED_CYCLE_COUNT_DPT, 1);
-    _totalMissedCyclesTodayDisplay->write(_db->getSumToday(MISSED_CYCLE_COUNT_DPT));
+    _data->insertDataPoint(MISSED_CYCLE_COUNT_DPT, 1);
+    _totalMissedCyclesTodayDisplay->write(_data->getSumToday(MISSED_CYCLE_COUNT_DPT));
   }
 }
 
