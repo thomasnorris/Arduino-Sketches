@@ -136,7 +136,7 @@ void loop() {
   // hard reset?
   if (_hardResetVirtBtn->isOn()) {
     _hardResetVirtBtn->off();
-
+    _infoDisplay->write("Performing hard reset...");
     _logger->warning("Hard reset via Blynk");
 
     ESP.restart();
