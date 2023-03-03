@@ -66,10 +66,11 @@ inline const int HARD_RESET_VPIN = 13;
 inline const int TOTAL_CYCLES_TODAY = 14;
 inline const int TOTAL_MISSED_CYCLES_TODAY = 15;
 
-// logger
+// AppLogs db connection settings
+inline const int LOGGER_APP_ID = -1;
 inline const String LOGGER_URL = "";
-inline const String LOGGER_AUTH_HEADER = "";
-inline const String LOGGER_AUTH_TOKEN = "";
-inline const int LOGGER_APP_ID = 11;
+inline const String LOGGER_USERNAME = "";
+inline const String LOGGER_PASSWORD = "";
+inline const int LOGGER_PORT = 3360;
 
 #endif

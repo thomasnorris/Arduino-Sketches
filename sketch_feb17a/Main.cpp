@@ -7,7 +7,7 @@ auto _doorSensor = new Gpio(DOOR_PIN, DOOR_PIN_PINMODE);
 auto _doorLed = new Led(DOOR_LED_PIN, DOOR_LED_ON_VALUE);
 auto _gaClient = new GAClient(GA_URL, GA_AUTH_HEADER, GA_AUTH_TOKEN);
 auto _blynk = new BlynkServer(BLYNK_IP, BLYNK_PORT, BLYNK_AUTH_TOKEN);
-auto _logger = new LoggerClient(LOGGER_URL, LOGGER_AUTH_HEADER, LOGGER_AUTH_TOKEN, LOGGER_APP_ID);
+auto _logger = new LoggerClient(LOGGER_APP_ID, LOGGER_URL, LOGGER_USERNAME, LOGGER_PASSWORD, LOGGER_PORT);
 auto _th = new TimeHelpers();
 auto _db = new ArduinoData(ARDUINO_DATA_APP_ID, ARDUINO_DATA_URL, ARDUINO_DATA_USERNAME, ARDUINO_DATA_PASSWORD, ARDUINO_DATA_PORT);
 
@@ -93,6 +93,7 @@ void setup() {
   _th->update();
 
   // init bylnk i/o
+  _infoDisplay->write("Initializing, please wait...");
   _doorVirtLed->off();
   _cycleInProgressVirtLed->off();
   _timerCountdownDisplay->write(_th->prettyFormatS(WAIT_TIME_BEFORE_CYCLE_M * 60));
@@ -109,6 +110,9 @@ void setup() {
 
   // cron schedules
   Cron.create(const_cast<char*>(DAILY_DATA_REFRESH_CRON.c_str()), refreshDailyData, false);
+
+  // get data
+  refreshDailyData();
 
   // enable cycling
   _cycleEnableVirtBtn->on();
@@ -285,7 +289,7 @@ void cycleIfReady() {
 
 void cycleIfEnabled(bool manual) {
   // update display
-  auto localDateTime = _th->getCurrentLocalDateTime();
+  auto localDateTime = _th->getCurrentLocalDateTime12hr();
   _lastCycleTimeDisplay->write(localDateTime);
   _db->updateDataPoint(LAST_CYCLE_TIME_DPT, localDateTime);
 
