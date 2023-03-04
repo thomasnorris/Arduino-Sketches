@@ -35,8 +35,8 @@ inline const byte DOOR_PIN_PINMODE = INPUT_PULLUP; // default floating to be HIG
 inline const byte DOOR_LED_PIN = D0;
 inline const byte DOOR_LED_ON_VALUE = LOW;
 
-// google assistant
-inline const String GA_URL = "";
+// google assistant (no https)
+inline const String GA_SEND_ENDPOINT = "http://192.168.1.62:1000/send";
 inline const String GA_AUTH_HEADER = "";
 inline const String GA_AUTH_TOKEN = "";
 inline const String CYCLE_COMMAND = "Activate scene Ellie pooped";

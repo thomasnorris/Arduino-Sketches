@@ -5,7 +5,7 @@ auto _wifi = new WifiClient(WIFI_SSID, WIFI_PASS, WIFI_LED_PIN, WIFI_LED_ON_VALU
 auto _ota = new OTAClient(HOSTNAME);
 auto _doorSensor = new Gpio(DOOR_PIN, DOOR_PIN_PINMODE);
 auto _doorLed = new Led(DOOR_LED_PIN, DOOR_LED_ON_VALUE);
-auto _gaClient = new GAClient(GA_URL, GA_AUTH_HEADER, GA_AUTH_TOKEN);
+auto _gaClient = new GAClient(GA_SEND_ENDPOINT, GA_AUTH_HEADER, GA_AUTH_TOKEN);
 auto _blynk = new BlynkServer(BLYNK_IP, BLYNK_PORT, BLYNK_AUTH_TOKEN);
 auto _logger = new LoggerClient(LOGGER_APP_ID, LOGGER_URL, LOGGER_USERNAME, LOGGER_PASSWORD, LOGGER_PORT);
 auto _th = new TimeHelpers();
@@ -78,6 +78,15 @@ void handleBlynkPinValueChange(int pin, String val) {
 }
 
 void setup() {
+  try {
+    trySetup();
+  }
+  catch (...) {
+    handleException();
+  }
+}
+
+void trySetup() {
   Serial.begin(BAUD);
   while (!Serial) {}
 
@@ -124,6 +133,15 @@ void setup() {
 }
 
 void loop() {
+  try {
+    tryLoop();
+  }
+  catch (...) {
+    handleException();
+  }
+}
+
+void tryLoop() {
   Cron.delay();
   updateUptime();
 
@@ -326,4 +344,24 @@ void updateUptime() {
   auto current_time = _th->getClockTimeNow();
   int uptime_s = _th->getElapsedTimeS(_uptime_start, current_time);
   _uptimeDisplay->write(_th->prettyFormatS(uptime_s));
+}
+
+void handleException() {
+  try {
+    throw;
+  }
+  catch (const std::exception& e) {
+    recordException(String(e.what()), "const std::exception&");
+  }
+  catch (const char* e) {
+    recordException(e, "const char*");
+  }
+  catch (...) {
+    recordException("Unkown reason", "No details available");
+  }
+}
+
+void recordException(String message, String details) {
+  _logger->error(message, details);
+  _blynk->notify("Error: " + message);
 }

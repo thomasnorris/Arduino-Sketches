@@ -18,6 +18,9 @@
 void setup();
 void loop();
 
+void trySetup();
+void tryLoop();
+
 void handleBlynkPinValueChange(int pin, String value);
 
 void getAndSetDataForToday();
@@ -28,5 +31,8 @@ void cycleIfReady();
 void updateUptime();
 void cycleIfEnabled(bool manual = false);
 void refreshDailyData();
+
+void handleException();
+void recordException(String message, String details = "");
 
 #endif
