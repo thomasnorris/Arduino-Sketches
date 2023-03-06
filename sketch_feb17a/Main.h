@@ -14,6 +14,7 @@
 #include "src/Arduino-Helpers/WifiClass/WifiClass.h"
 #include "src/Arduino-Helpers/GoogleAssistantClass/GoogleAssistantClass.h"
 #include "src/Arduino-Helpers/BlynkClasses/BlynkClasses.h"
+#include "src/Arduino-Helpers/ExceptionHandlerClass/ExceptionHandlerClass.h"
 
 void setup();
 void loop();
@@ -21,7 +22,10 @@ void loop();
 void trySetup();
 void tryLoop();
 
+// defined in BlynkClasses.cpp
 void handleBlynkPinValueChange(int pin, String value);
+// defined in ExceptionHandlerClass.cpp
+void handleException(String message, String details);
 
 void getAndSetDataForToday();
 
@@ -35,8 +39,5 @@ void handleCustomTerminalCommands(VirtualTerminal* term, String val);
 
 void refreshDailyData();
 void updateBlynkData();
-
-void handleException();
-void recordException(String message, String details = "");
 
 #endif

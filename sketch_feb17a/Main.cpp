@@ -10,6 +10,7 @@ auto _blynk = new BlynkServer(BLYNK_IP, BLYNK_PORT, BLYNK_AUTH_TOKEN);
 auto _logger = new LoggerClient(LOGGER_APP_ID, LOGGER_URL, LOGGER_USERNAME, LOGGER_PASSWORD, LOGGER_PORT);
 auto _th = new TimeHelpers();
 auto _data = new ArduinoDataClient(ARDUINO_DATA_APP_ID, ARDUINO_DATA_URL, ARDUINO_DATA_USERNAME, ARDUINO_DATA_PASSWORD, ARDUINO_DATA_PORT);
+auto _handler = new ExceptionHandler();
 
 // blynk leds
 auto _doorVirtLed = new VirtualLed(DOOR_LED_VPIN);
@@ -81,13 +82,17 @@ void handleBlynkPinValueChange(int pin, String val) {
   }
 }
 
+// handle caught exceptions here
+void handleException(String origin, String message, String details) {
+  _logger->error(message, origin + ": " + details);
+
+  message = "Error in " + origin + ": " + message;
+  _blynk->notify(message);
+  _terminal->error(message);
+}
+
 void setup() {
-  try {
-    trySetup();
-  }
-  catch (...) {
-    handleException();
-  }
+  _handler->wrap(trySetup, "Main/setup()");
 }
 
 void trySetup() {
@@ -143,12 +148,7 @@ void trySetup() {
 }
 
 void loop() {
-  try {
-    tryLoop();
-  }
-  catch (...) {
-    handleException();
-  }
+  _handler->wrap(tryLoop, "Main/loop()");
 }
 
 void tryLoop() {
@@ -368,26 +368,6 @@ void updateUptime() {
   auto current_time = _th->getClockTimeNow();
   int uptime_s = _th->getElapsedTimeS(_uptime_start, current_time);
   _uptimeDisplay->write(_th->prettyFormatS(uptime_s));
-}
-
-void handleException() {
-  try {
-    throw;
-  }
-  catch (const std::exception& e) {
-    recordException(String(e.what()), "const std::exception&");
-  }
-  catch (const char* e) {
-    recordException(e, "const char*");
-  }
-  catch (...) {
-    recordException("Unkown reason", "No details available");
-  }
-}
-
-void recordException(String message, String details) {
-  _logger->error(message, details);
-  _blynk->notify("Error: " + message);
 }
 
 // handling for any custom commands send through a VirtualTerminal
