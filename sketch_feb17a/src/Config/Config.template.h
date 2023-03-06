@@ -13,6 +13,12 @@ inline const String ARDUINO_DATA_USERNAME = "";
 inline const String ARDUINO_DATA_PASSWORD = "";
 inline const int ARDUINO_DATA_PORT = 3306; // default is 3306
 
+// ArduinoData.DataPointTypes (DPT) for corresponding ARDUINO_DATA_APP_ID (above)
+inline const int DOOR_OPENED_DPT = 4;
+inline const int DOOR_CLOSED_DPT = 5;
+inline const int LAST_OPENED_TIME_DPT = 6;
+inline const int LAST_CLOSED_TIME_DPT = 7;
+
 // wifi
 inline const String WIFI_SSID = "";
 inline const String WIFI_PASS = "";
@@ -24,11 +30,19 @@ inline const String BLYNK_IP = "192.168.1.63";
 inline const int BLYNK_PORT = 8442;
 inline const String BLYNK_AUTH_TOKEN = "";
 
-// logger
-inline const String LOGGER_URL = "";
-inline const String LOGGER_AUTH_HEADER = "";
-inline const String LOGGER_AUTH_TOKEN = "";
+// blynk terminal commands
+inline const String TERM_HELP = "?";
+inline const String TERM_CRON = "cron";
+inline const String TERM_CLEAR = "clear";
+inline const String TERM_RESET = "reset";
+inline const String TERM_REFRESH = "refresh";
+
+// AppLogs db connection settings
 inline const int LOGGER_APP_ID = -1; // get from Common.Apps
+inline const String LOGGER_URL = "";
+inline const String LOGGER_USERNAME = "";
+inline const String LOGGER_PASSWORD = "";
+inline const int LOGGER_PORT = 3306; // default is 3306
 
 // door sensor
 inline const byte DOOR_PIN = D1; // gpio 5
@@ -44,5 +58,6 @@ inline const int SYSTEM_UPTIME_DISPLAY_VPIN = 1;
 inline const int LAST_OPENED_TIME_VPIN = 2;
 inline const int LAST_CLOSED_TIME_VPIN = 3;
 inline const int COUNT_TIMES_OPENED_VPIN = 4; // no count closed vpin
+inline const int TERMINAL_VPIN = 5;
 
 #endif

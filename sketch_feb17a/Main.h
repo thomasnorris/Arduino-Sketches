@@ -12,12 +12,17 @@
 #include "src/Arduino-Helpers/BlynkClasses/BlynkClasses.h"
 #include "src/Arduino-Helpers/GpioClass/GpioClass.h"
 #include "src/Arduino-Helpers/LedClass/LedClass.h"
+#include "src/Arduino-Helpers/ExceptionHandlerClass/ExceptionHandlerClass.h"
 
 void setup();
 void loop();
 
 void handleBlynkPinValueChange(int pin, String value);
+void handleException(String origin, String message, String details);
+void handleCustomTerminalCommands(VirtualTerminal* term, String val);
 
 void updateUptime();
+void performHardReset();
+void refreshDatabaseData();
 
 #endif
