@@ -19,9 +19,6 @@
 void setup();
 void loop();
 
-void trySetup();
-void tryLoop();
-
 // defined in BlynkClasses.cpp
 void handleBlynkPinValueChange(int pin, String value);
 // defined in ExceptionHandlerClass.cpp

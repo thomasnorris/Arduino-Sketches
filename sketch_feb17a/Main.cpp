@@ -92,150 +92,152 @@ void handleException(String origin, String message, String details) {
 }
 
 void setup() {
-  _handler->wrap(trySetup, "Main/setup()");
-}
+  try {
+    Serial.begin(BAUD);
+    while (!Serial) {}
 
-void trySetup() {
-  Serial.begin(BAUD);
-  while (!Serial) {}
+    _uptime_start = _th->getClockTimeNow();
 
-  _uptime_start = _th->getClockTimeNow();
+    // init connections
+    _wifi->connect();
+    _blynk->configure();
+    _blynk->connect();
+    _blynk->run();
+    _ota->begin();
+    _th->begin();
+    _th->update();
 
-  // init connections
-  _wifi->connect();
-  _blynk->configure();
-  _blynk->connect();
-  _blynk->run();
-  _ota->begin();
-  _th->begin();
-  _th->update();
+    // init bylnk i/o
+    _terminal->clear();
+    _terminal->init("Initializing...");
+    _doorVirtLed->off();
+    _cycleInProgressVirtLed->off();
+    _timerCountdownDisplay->write(_th->prettyFormatS(WAIT_TIME_BEFORE_CYCLE_M * 60));
+    _cycleCooldownDisplay->write(_th->prettyFormatS(CYCLE_COOLDOWN_DELAY_S));
+    _cycleTimingLed->off();
+    _manualCycleVirtBtn->off();
+    _cancelCountdownVirtBtn->off();
+    _hardResetVirtBtn->off();
 
-  // init bylnk i/o
-  _terminal->clear();
-  _terminal->init("Initializing...");
-  _doorVirtLed->off();
-  _cycleInProgressVirtLed->off();
-  _timerCountdownDisplay->write(_th->prettyFormatS(WAIT_TIME_BEFORE_CYCLE_M * 60));
-  _cycleCooldownDisplay->write(_th->prettyFormatS(CYCLE_COOLDOWN_DELAY_S));
-  _cycleTimingLed->off();
-  _manualCycleVirtBtn->off();
-  _cancelCountdownVirtBtn->off();
-  _hardResetVirtBtn->off();
+    // get and set persistent data
+    _totalCyclesTodayDisplay->write(_data->getSumToday(CYCLE_COUNT_DPT));
+    _totalMissedCyclesTodayDisplay->write(_data->getSumToday(MISSED_CYCLE_COUNT_DPT));
+    _lastCycleTimeDisplay->write(_data->getLast(LAST_CYCLE_TIME_DPT));
 
-  // get and set persistent data
-  _totalCyclesTodayDisplay->write(_data->getSumToday(CYCLE_COUNT_DPT));
-  _totalMissedCyclesTodayDisplay->write(_data->getSumToday(MISSED_CYCLE_COUNT_DPT));
-  _lastCycleTimeDisplay->write(_data->getLast(LAST_CYCLE_TIME_DPT));
+    // cron schedules
+    Cron.create(const_cast<char*>(DAILY_DATA_REFRESH_CRON.c_str()), refreshDailyData, false);
+    Cron.create(const_cast<char*>(BLYNK_DATA_UPDATE_CRON.c_str()), updateBlynkData, false);
 
-  // cron schedules
-  Cron.create(const_cast<char*>(DAILY_DATA_REFRESH_CRON.c_str()), refreshDailyData, false);
-  Cron.create(const_cast<char*>(BLYNK_DATA_UPDATE_CRON.c_str()), updateBlynkData, false);
+    // get data
+    refreshDailyData();
 
-  // get data
-  refreshDailyData();
+    // enable cycling
+    _cycleEnableVirtBtn->on();
 
-  // enable cycling
-  _cycleEnableVirtBtn->on();
-
-  // respond done
-  String init_message = "System initialized";
-  String my_ip = _wifi->getIPAddress();
-  _logger->init(init_message, _wifi->getIPAddress());
-  _blynk->notify(init_message);
-  _terminal->info(init_message);
-  _terminal->info("IP: " + my_ip);
-  _terminal->info("Type \"" + TERM_HELP + "\" to list custom commands");
+    // respond done
+    String init_message = "System initialized";
+    String my_ip = _wifi->getIPAddress();
+    _logger->init(init_message, _wifi->getIPAddress());
+    _blynk->notify(init_message);
+    _terminal->info(init_message);
+    _terminal->info("IP: " + my_ip);
+    _terminal->info("Type \"" + TERM_HELP + "\" to list custom commands");
+  }
+  catch (...) {
+    _handler->handle("Main.cpp/setup()");
+  }
 }
 
 void loop() {
-  _handler->wrap(tryLoop, "Main/loop()");
-}
+  try {
+    Cron.delay();
+    updateUptime();
 
-void tryLoop() {
-  Cron.delay();
-  updateUptime();
+    _wifi->checkConnection();
+    _blynk->checkConnection();
+    _blynk->run();
+    _ota->handle();
+    _th->update();
 
-  _wifi->checkConnection();
-  _blynk->checkConnection();
-  _blynk->run();
-  _ota->handle();
-  _th->update();
+    // hard reset?
+    if (_hardResetVirtBtn->isOn()) {
+      _hardResetVirtBtn->off();
+      _terminal->warning("Performing hard reset...");
+      _logger->warning("Hard reset via Blynk");
 
-  // hard reset?
-  if (_hardResetVirtBtn->isOn()) {
-    _hardResetVirtBtn->off();
-    _terminal->warning("Performing hard reset...");
-    _logger->warning("Hard reset via Blynk");
-
-    ESP.restart();
-    return;
-  }
-
-  // manual cycle?
-  if (_manualCycleVirtBtn->isOn()) {
-    _manualCycleVirtBtn->off();
-
-    // only stop the timer if enabled
-    if (_timer_started) {
-      timerStop();
-    }
-
-    cycleIfEnabled(true);
-    return;
-  }
-
-  // stop the timer?
-  if (_cancelCountdownVirtBtn->isOn()) {
-    _cancelCountdownVirtBtn->off();
-
-    // only stop if it's running
-    if (_timer_started) {
-      _logger->info("Countdown manually cancelled");
-      timerStop();
-    }
-    else {
-      _terminal->warning("Timer not running");
-    }
-    return;
-  }
-
-  // should we start the timer?
-  if (_timer_started) {
-    cycleIfReady();
-  }
-
-  // low means sensor has made a connection
-  if (_doorSensor->isLow()) {
-    _doorLed->on();
-    _doorVirtLed->on();
-
-    // allow timer to be reset on next open
-    _timer_allow_reset = true;
-    _door_closed_after_cycle = true;
-
-    if (!_timer_started) {
-      _terminal->info("Ready for cycle");
-    }
-  }
-  else {
-    // door has been opened
-    _doorLed->off();
-    _doorVirtLed->off();
-
-    // make sure the door has been closed once
-    if (!_door_closed_after_cycle) {
-      _terminal->warning("Door open after previous cycle");
+      ESP.restart();
       return;
     }
 
-    // start the timer once
-    // either if it has never been started, or if it can be reset
-    if (!_timer_started || _timer_allow_reset) {
-      timerStart();
-    }
-  }
+    // manual cycle?
+    if (_manualCycleVirtBtn->isOn()) {
+      _manualCycleVirtBtn->off();
 
-  delay(LOOP_DELAY_MS);
+      // only stop the timer if enabled
+      if (_timer_started) {
+        timerStop();
+      }
+
+      cycleIfEnabled(true);
+      return;
+    }
+
+    // stop the timer?
+    if (_cancelCountdownVirtBtn->isOn()) {
+      _cancelCountdownVirtBtn->off();
+
+      // only stop if it's running
+      if (_timer_started) {
+        _logger->info("Countdown manually cancelled");
+        timerStop();
+      }
+      else {
+        _terminal->warning("Timer not running");
+      }
+      return;
+    }
+
+    // should we start the timer?
+    if (_timer_started) {
+      cycleIfReady();
+    }
+
+    // low means sensor has made a connection
+    if (_doorSensor->isLow()) {
+      _doorLed->on();
+      _doorVirtLed->on();
+
+      // allow timer to be reset on next open
+      _timer_allow_reset = true;
+      _door_closed_after_cycle = true;
+
+      if (!_timer_started) {
+        _terminal->info("Ready for cycle");
+      }
+    }
+    else {
+      // door has been opened
+      _doorLed->off();
+      _doorVirtLed->off();
+
+      // make sure the door has been closed once
+      if (!_door_closed_after_cycle) {
+        _terminal->warning("Door open after previous cycle");
+        return;
+      }
+
+      // start the timer once
+      // either if it has never been started, or if it can be reset
+      if (!_timer_started || _timer_allow_reset) {
+        timerStart();
+      }
+    }
+
+    delay(LOOP_DELAY_MS);
+  }
+  catch (...) {
+    _handler->handle("Main.cpp/loop()");
+  }
 }
 
 // pulls data from the db and updates displays
