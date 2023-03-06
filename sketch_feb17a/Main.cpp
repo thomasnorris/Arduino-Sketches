@@ -11,25 +11,27 @@ auto _logger = new LoggerClient(LOGGER_APP_ID, LOGGER_URL, LOGGER_USERNAME, LOGG
 auto _th = new TimeHelpers();
 auto _data = new ArduinoDataClient(ARDUINO_DATA_APP_ID, ARDUINO_DATA_URL, ARDUINO_DATA_USERNAME, ARDUINO_DATA_PASSWORD, ARDUINO_DATA_PORT);
 
-// leds
+// blynk leds
 auto _doorVirtLed = new VirtualLed(DOOR_LED_VPIN);
 auto _cycleInProgressVirtLed = new VirtualLed(CYCLE_IN_PROGRESS_LED_VPIN);
 auto _cycleTimingLed = new VirtualLed(CYCLE_TIMING_LED_VPIN);
 
-// buttons
+// blynk buttons
 auto _cycleEnableVirtBtn = new VirtualPin(CYCLE_ENABLE_VPIN);
 auto _manualCycleVirtBtn = new VirtualPin(MANUAL_CYCLE_VPIN);
 auto _cancelCountdownVirtBtn = new VirtualPin(CANCEL_COUNTDOWN_VPIN);
 auto _hardResetVirtBtn = new VirtualPin(HARD_RESET_VPIN);
 
-// displays
+// blynk displays
 auto _timerCountdownDisplay = new VirtualPin(TIMER_COUNTDOWN_DISPLAY_VPIN);
-auto _infoDisplay = new VirtualPin(INFO_DISPLAY_VPIN);
 auto _cycleCooldownDisplay = new VirtualPin(CYCLE_COOLDOWN_DISPLAY_VPIN);
 auto _uptimeDisplay = new VirtualPin(SYSTEM_UPTIME_DISPLAY_VPIN);
 auto _lastCycleTimeDisplay = new VirtualPin(LAST_CYCLE_TIME_VPIN);
 auto _totalCyclesTodayDisplay = new VirtualPin(TOTAL_CYCLES_TODAY);
 auto _totalMissedCyclesTodayDisplay = new VirtualPin(TOTAL_MISSED_CYCLES_TODAY);
+
+// blynk terminals
+auto _terminal = new VirtualTerminal(TERMINAL_VPIN, _th);
 
 // variables
 std::chrono::time_point<std::chrono::system_clock> _start_time;
@@ -46,8 +48,10 @@ void handleBlynkPinValueChange(int pin, String val) {
       break;
     case TIMER_COUNTDOWN_DISPLAY_VPIN:
       _timerCountdownDisplay->set(val);
-    case INFO_DISPLAY_VPIN:
-      _infoDisplay->set(val);
+      break;
+    case TERMINAL_VPIN:
+      // custom command handling here
+      handleCustomTerminalCommands(_terminal, val);
       break;
     case CYCLE_COOLDOWN_DISPLAY_VPIN:
       _cycleCooldownDisplay->set(val);
@@ -102,7 +106,8 @@ void trySetup() {
   _th->update();
 
   // init bylnk i/o
-  _infoDisplay->write("Initializing, please wait...");
+  _terminal->clear();
+  _terminal->init("Initializing...");
   _doorVirtLed->off();
   _cycleInProgressVirtLed->off();
   _timerCountdownDisplay->write(_th->prettyFormatS(WAIT_TIME_BEFORE_CYCLE_M * 60));
@@ -119,6 +124,7 @@ void trySetup() {
 
   // cron schedules
   Cron.create(const_cast<char*>(DAILY_DATA_REFRESH_CRON.c_str()), refreshDailyData, false);
+  Cron.create(const_cast<char*>(BLYNK_DATA_UPDATE_CRON.c_str()), updateBlynkData, false);
 
   // get data
   refreshDailyData();
@@ -128,8 +134,12 @@ void trySetup() {
 
   // respond done
   String init_message = "System initialized";
+  String my_ip = _wifi->getIPAddress();
   _logger->init(init_message, _wifi->getIPAddress());
   _blynk->notify(init_message);
+  _terminal->info(init_message);
+  _terminal->info("IP: " + my_ip);
+  _terminal->info("Type \"?\" to list custom commands");
 }
 
 void loop() {
@@ -154,7 +164,7 @@ void tryLoop() {
   // hard reset?
   if (_hardResetVirtBtn->isOn()) {
     _hardResetVirtBtn->off();
-    _infoDisplay->write("Performing hard reset...");
+    _terminal->warning("Performing hard reset...");
     _logger->warning("Hard reset via Blynk");
 
     ESP.restart();
@@ -184,8 +194,7 @@ void tryLoop() {
       timerStop();
     }
     else {
-      _infoDisplay->write("Timer not running");
-      delay(500);
+      _terminal->warning("Timer not running");
     }
     return;
   }
@@ -205,7 +214,7 @@ void tryLoop() {
     _door_closed_after_cycle = true;
 
     if (!_timer_started) {
-      _infoDisplay->write("Ready for cycle");
+      _terminal->info("Ready for cycle");
     }
   }
   else {
@@ -215,7 +224,7 @@ void tryLoop() {
 
     // make sure the door has been closed once
     if (!_door_closed_after_cycle) {
-      _infoDisplay->write("Door open after previous cycle");
+      _terminal->warning("Door open after previous cycle");
       return;
     }
 
@@ -229,11 +238,24 @@ void tryLoop() {
   delay(LOOP_DELAY_MS);
 }
 
+// pulls data from the db and updates displays
 void refreshDailyData() {
   _totalCyclesTodayDisplay->write(_data->getSumToday(CYCLE_COUNT_DPT));
   _totalMissedCyclesTodayDisplay->write(_data->getSumToday(MISSED_CYCLE_COUNT_DPT));
   _lastCycleTimeDisplay->write(_data->getLast(LAST_CYCLE_TIME_DPT));
+
+  String refresh_message = "Daily data refreshed";
   _logger->info("Daily data refreshed");
+  _terminal->println(refresh_message, "[CRON]");
+}
+
+// sends current data to blynk (mainly so superchart looks correct)
+void updateBlynkData() {
+  _totalCyclesTodayDisplay->write(_totalCyclesTodayDisplay->read());
+  _totalMissedCyclesTodayDisplay->write(_totalMissedCyclesTodayDisplay->read());
+  _lastCycleTimeDisplay->write(_lastCycleTimeDisplay->read());
+
+  // don't log as it'll just pollute the db
 }
 
 void performCycleCooldown() {
@@ -247,7 +269,7 @@ void performCycleCooldown() {
     _cycleCooldownDisplay->write(_th->prettyFormatS(--delay_s));
 
     if (delay_s == CYCLE_COOLDOWN_DELAY_S - 2) {
-      _infoDisplay->write("Cycle in cooldown");
+      _terminal->info("Cycle in cooldown");
     }
 
     delay(1000);
@@ -262,7 +284,7 @@ void performCycleCooldown() {
 void timerStart() {
   String message = "Timer started";
   _cycleTimingLed->on();
-  _infoDisplay->write(message);
+  _terminal->info(message);
   _logger->info(message);
   _blynk->notify(message);
 
@@ -274,7 +296,7 @@ void timerStart() {
 void timerStop() {
   String message = "Timer stopped";
   _cycleTimingLed->off();
-  _infoDisplay->write(message);
+  _terminal->info(message);
   _logger->info(message);
 
   _timer_started = false;
@@ -298,7 +320,6 @@ void cycleIfReady() {
     cycleIfEnabled();
   }
   else {
-    _infoDisplay->write("Timer running");
     int time_remaining_s = wait_time_s - elapsed_time_s;
     _timerCountdownDisplay->write(_th->prettyFormatS(time_remaining_s));
     _doorLed->toggleOnOff(500);
@@ -313,7 +334,7 @@ void cycleIfEnabled(bool manual) {
 
   String message;
   if (_cycleEnableVirtBtn->isOn()) {
-    _infoDisplay->write("Cycling...");
+    _terminal->info("Cycling...");
     _gaClient->send(CYCLE_COMMAND);
 
     message = "Cycle command sent";
@@ -321,9 +342,12 @@ void cycleIfEnabled(bool manual) {
       message = "Cycle command manually initiated";
     }
 
-    _infoDisplay->write(message);
+    _terminal->info(message);
     _logger->info(message);
-    _blynk->notify(message);
+
+    if (!manual) {
+      _blynk->notify(message);
+    }
 
     _data->insertDataPoint(CYCLE_COUNT_DPT, 1);
     _totalCyclesTodayDisplay->write(_data->getSumToday(CYCLE_COUNT_DPT));
@@ -332,8 +356,8 @@ void cycleIfEnabled(bool manual) {
   }
   else {
     message = "Not cycling; disabled";
-    _infoDisplay->write(message);
-    _logger->info(message);
+    _terminal->warning(message);
+    _logger->warning(message);
 
     _data->insertDataPoint(MISSED_CYCLE_COUNT_DPT, 1);
     _totalMissedCyclesTodayDisplay->write(_data->getSumToday(MISSED_CYCLE_COUNT_DPT));
@@ -364,4 +388,38 @@ void handleException() {
 void recordException(String message, String details) {
   _logger->error(message, details);
   _blynk->notify("Error: " + message);
+}
+
+// handling for any custom commands send through a VirtualTerminal
+void handleCustomTerminalCommands(VirtualTerminal* term, String val) {
+  bool valid_command = false;
+  bool skip_done_print = false;
+
+  if (val == "?") {
+    valid_command = true;
+    term->println("\"cron\" - lists cron info");
+    term->println("\"clear\" - clears this terminal display");
+  }
+  
+  if (val == "cron") {
+    valid_command = true;
+    term->println("Daily data refresh: " + DAILY_DATA_REFRESH_CRON);
+    term->println("Blynk data update: " + BLYNK_DATA_UPDATE_CRON);
+  }
+
+  if (val == "clear") {
+    valid_command = true;
+    skip_done_print = true;
+    term->clear();
+  }
+
+  if (!valid_command) {
+    term->println("Command \"" + val + "\" is invalid");
+    term->println("Type \"?\" to list custom commands");
+  }
+  else {
+    if (!skip_done_print) {
+      term->println("Done printing info for command \"" + val + "\"");
+    }
+  }
 }
