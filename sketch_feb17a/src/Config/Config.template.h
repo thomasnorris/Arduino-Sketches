@@ -6,8 +6,9 @@ inline const int BAUD = 9600;
 inline const int LOOP_DELAY_MS = 0;
 inline const String HOSTNAME = "LitterBoxCycler";
 
-// cron schedules
-inline const String DAILY_DATA_REFRESH_CRON = "0 0 * * * *"; // every day at midnight
+// cron schedules (see https://crontab.cronhub.io/), 6 fields format
+inline const String DAILY_DATA_REFRESH_CRON = "0 0 0 * * *";   // every day at midnight
+inline const String BLYNK_DATA_UPDATE_CRON = "0 */15 * * * *"; // every 15 minutes
 
 // ArduinoData db connection settings
 inline const int ARDUINO_DATA_APP_ID = 11;
@@ -55,7 +56,7 @@ inline const int TIMER_COUNTDOWN_DISPLAY_VPIN = 0;
 inline const int CYCLE_ENABLE_VPIN = 1;
 inline const int DOOR_LED_VPIN = 2;
 inline const int CYCLE_IN_PROGRESS_LED_VPIN = 3;
-inline const int INFO_DISPLAY_VPIN = 4;
+inline const int TERMINAL_VPIN = 4;
 inline const int CYCLE_COOLDOWN_DISPLAY_VPIN = 7;
 inline const int CYCLE_TIMING_LED_VPIN = 8;
 inline const int SYSTEM_UPTIME_DISPLAY_VPIN = 9;
