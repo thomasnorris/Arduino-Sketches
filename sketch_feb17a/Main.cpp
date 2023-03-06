@@ -21,7 +21,6 @@ auto _cycleTimingLed = new VirtualLed(CYCLE_TIMING_LED_VPIN);
 auto _cycleEnableVirtBtn = new VirtualPin(CYCLE_ENABLE_VPIN);
 auto _manualCycleVirtBtn = new VirtualPin(MANUAL_CYCLE_VPIN);
 auto _cancelCountdownVirtBtn = new VirtualPin(CANCEL_COUNTDOWN_VPIN);
-auto _hardResetVirtBtn = new VirtualPin(HARD_RESET_VPIN);
 
 // blynk displays
 auto _timerCountdownDisplay = new VirtualPin(TIMER_COUNTDOWN_DISPLAY_VPIN);
@@ -30,6 +29,7 @@ auto _uptimeDisplay = new VirtualPin(SYSTEM_UPTIME_DISPLAY_VPIN);
 auto _lastCycleTimeDisplay = new VirtualPin(LAST_CYCLE_TIME_VPIN);
 auto _totalCyclesTodayDisplay = new VirtualPin(TOTAL_CYCLES_TODAY);
 auto _totalMissedCyclesTodayDisplay = new VirtualPin(TOTAL_MISSED_CYCLES_TODAY);
+auto _totalCyclesThisWeekDisplay = new VirtualPin(TOTAL_CYCLES_THIS_WEEK);
 
 // blynk terminals
 auto _terminal = new VirtualTerminal(TERMINAL_VPIN, _th);
@@ -68,15 +68,14 @@ void handleBlynkPinValueChange(int pin, String val) {
       break;
     case LAST_CYCLE_TIME_VPIN:
       _lastCycleTimeDisplay->set(val);
-    case HARD_RESET_VPIN:
-      _hardResetVirtBtn->set(val);
-      break;
     case TOTAL_CYCLES_TODAY:
       _totalCyclesTodayDisplay->set(val);
       break;
     case TOTAL_MISSED_CYCLES_TODAY:
       _totalMissedCyclesTodayDisplay->set(val);
       break;
+    case TOTAL_CYCLES_THIS_WEEK:
+      _totalCyclesThisWeekDisplay->set(val);
     default:
       break;
   }
@@ -117,19 +116,19 @@ void setup() {
     _cycleTimingLed->off();
     _manualCycleVirtBtn->off();
     _cancelCountdownVirtBtn->off();
-    _hardResetVirtBtn->off();
 
     // get and set persistent data
     _totalCyclesTodayDisplay->write(_data->getSumToday(CYCLE_COUNT_DPT));
     _totalMissedCyclesTodayDisplay->write(_data->getSumToday(MISSED_CYCLE_COUNT_DPT));
     _lastCycleTimeDisplay->write(_data->getLast(LAST_CYCLE_TIME_DPT));
+    _totalCyclesThisWeekDisplay->write(_data->getSumThisWeek(CYCLE_COUNT_DPT));
 
     // cron schedules
-    Cron.create(const_cast<char*>(DAILY_DATA_REFRESH_CRON.c_str()), refreshDailyData, false);
+    Cron.create(const_cast<char*>(DB_DATA_REFRESH_CRON.c_str()), refreshDatabaseData, false);
     Cron.create(const_cast<char*>(BLYNK_DATA_UPDATE_CRON.c_str()), updateBlynkData, false);
 
     // get data
-    refreshDailyData();
+    refreshDatabaseData();
 
     // enable cycling
     _cycleEnableVirtBtn->on();
@@ -158,16 +157,6 @@ void loop() {
     _blynk->run();
     _ota->handle();
     _th->update();
-
-    // hard reset?
-    if (_hardResetVirtBtn->isOn()) {
-      _hardResetVirtBtn->off();
-      _terminal->warning("Performing hard reset...");
-      _logger->warning("Hard reset via Blynk");
-
-      ESP.restart();
-      return;
-    }
 
     // manual cycle?
     if (_manualCycleVirtBtn->isOn()) {
@@ -241,13 +230,14 @@ void loop() {
 }
 
 // pulls data from the db and updates displays
-void refreshDailyData() {
+void refreshDatabaseData() {
   _totalCyclesTodayDisplay->write(_data->getSumToday(CYCLE_COUNT_DPT));
   _totalMissedCyclesTodayDisplay->write(_data->getSumToday(MISSED_CYCLE_COUNT_DPT));
   _lastCycleTimeDisplay->write(_data->getLast(LAST_CYCLE_TIME_DPT));
+  _totalCyclesThisWeekDisplay->write(_data->getSumThisWeek(CYCLE_COUNT_DPT));
 
-  String refresh_message = "Daily data refreshed";
-  _logger->info("Daily data refreshed");
+  String refresh_message = "Database data refreshed";
+  _logger->info(refresh_message);
   _terminal->println(refresh_message, "[CRON]");
 }
 
@@ -256,6 +246,7 @@ void updateBlynkData() {
   _totalCyclesTodayDisplay->write(_totalCyclesTodayDisplay->read());
   _totalMissedCyclesTodayDisplay->write(_totalMissedCyclesTodayDisplay->read());
   _lastCycleTimeDisplay->write(_lastCycleTimeDisplay->read());
+  _totalCyclesThisWeekDisplay->write(_totalCyclesThisWeekDisplay->read());
 
   // don't log as it'll just pollute the db
 }
@@ -344,15 +335,19 @@ void cycleIfEnabled(bool manual) {
       message = "Cycle command manually initiated";
     }
 
-    _terminal->info(message);
     _logger->info(message);
 
     if (!manual) {
       _blynk->notify(message);
+      _terminal->info(message);
+    }
+    else {
+      _terminal->println(message, "[MANUAL]");
     }
 
     _data->insertDataPoint(CYCLE_COUNT_DPT, 1);
     _totalCyclesTodayDisplay->write(_data->getSumToday(CYCLE_COUNT_DPT));
+    _totalCyclesThisWeekDisplay->write(_data->getSumThisWeek(CYCLE_COUNT_DPT));
 
     performCycleCooldown();
   }
@@ -379,13 +374,15 @@ void handleCustomTerminalCommands(VirtualTerminal* term, String val) {
 
   if (val == TERM_HELP) {
     valid_command = true;
-    term->println("\"" + TERM_CRON + "\" - lists cron info");
+    term->println("\"" + TERM_CRON + "\" - lists cron info for enabled jobs");
     term->println("\"" + TERM_CLEAR + "\" - clears this terminal display");
+    term->println("\"" + TERM_RESET + "\" - performs a hard reset");
+    term->println("\"" + TERM_REFRESH + "\" - refreshes data from the database");
   }
 
   if (val == TERM_CRON) {
     valid_command = true;
-    term->println("Daily data refresh: " + DAILY_DATA_REFRESH_CRON);
+    term->println("Database data refresh: " + DB_DATA_REFRESH_CRON);
     term->println("Blynk data update: " + BLYNK_DATA_UPDATE_CRON);
   }
 
@@ -393,6 +390,18 @@ void handleCustomTerminalCommands(VirtualTerminal* term, String val) {
     valid_command = true;
     skip_done_print = true;
     term->clear();
+  }
+
+  if (val == TERM_RESET) {
+    valid_command = true;
+    skip_done_print = true;
+    performHardReset();
+  }
+
+  if (val == TERM_REFRESH) {
+    valid_command = true;
+    skip_done_print = true;
+    refreshDatabaseData();
   }
 
   if (!valid_command) {
@@ -404,4 +413,11 @@ void handleCustomTerminalCommands(VirtualTerminal* term, String val) {
       term->println("Done printing info for command \"" + val + "\"");
     }
   }
+}
+
+void performHardReset() {
+  _terminal->warning("Performing hard reset...");
+  _logger->warning("Hard reset via Blynk");
+
+  ESP.restart();
 }

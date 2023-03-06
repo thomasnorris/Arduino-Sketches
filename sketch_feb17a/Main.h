@@ -31,10 +31,11 @@ void timerStop();
 void cycleIfReady();
 void updateUptime();
 void cycleIfEnabled(bool manual = false);
+void performHardReset();
 
 void handleCustomTerminalCommands(VirtualTerminal* term, String val);
 
-void refreshDailyData();
+void refreshDatabaseData();
 void updateBlynkData();
 
 #endif
