@@ -6,6 +6,10 @@ inline const int BAUD = 9600;
 inline const int LOOP_DELAY_MS = 0;
 inline const String HOSTNAME = "NameOfThisProject"; // to discover device OTA
 
+// cron schedules (see https://crontab.cronhub.io/), 6 fields format
+inline const String DB_DATA_REFRESH_CRON = "0 0 0 * * *";   // every day at midnight
+inline const String BLYNK_DATA_UPDATE_CRON = "0 */15 * * * *"; // every 15 minutes
+
 // ArduinoData db connection settings
 inline const int ARDUINO_DATA_APP_ID = -1; // get from Common.Apps
 inline const String ARDUINO_DATA_URL = "";
@@ -59,5 +63,7 @@ inline const int LAST_OPENED_TIME_VPIN = 2;
 inline const int LAST_CLOSED_TIME_VPIN = 3;
 inline const int COUNT_TIMES_OPENED_VPIN = 4; // no count closed vpin
 inline const int TERMINAL_VPIN = 5;
+inline const int CONTROL_ENABLE_VPIN = 6;
+inline const int MANUAL_TRIGGER_VPIN = 7;
 
 #endif

@@ -3,6 +3,7 @@
 
 #include <Arduino.h>
 #include <string>
+#include <CronAlarms.h>
 #include "src/Config/Config.h"
 #include "src/Arduino-Helpers/ArduinoDataClass/ArduinoDataClass.h"
 #include "src/Arduino-Helpers/OTAClass/OTAClass.h"
@@ -24,5 +25,7 @@ void handleCustomTerminalCommands(VirtualTerminal* term, String val);
 void updateUptime();
 void performHardReset();
 void refreshDatabaseData();
+void updateBlynkData();
+void triggerIfEnabled();
 
 #endif

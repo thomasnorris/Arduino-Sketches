@@ -14,6 +14,10 @@ auto _handler = new ExceptionHandler();
 // blynk leds
 auto _doorVirtLed = new VirtualLed(DOOR_LED_VPIN);
 
+// blynk buttons
+auto _controlEnableVirtBtn = new VirtualPin(CONTROL_ENABLE_VPIN);
+auto _manualTriggerVirtBtn = new VirtualPin(MANUAL_TRIGGER_VPIN);
+
 // blynk displays
 auto _uptimeDisplay = new VirtualPin(SYSTEM_UPTIME_DISPLAY_VPIN);
 auto _lastTimeOpenedDisplay = new VirtualPin(LAST_OPENED_TIME_VPIN);
@@ -46,6 +50,12 @@ void handleBlynkPinValueChange(int pin, String val) {
     case TERMINAL_VPIN:
       // custom command handling here
       handleCustomTerminalCommands(_terminal, val);
+      break;
+    case CONTROL_ENABLE_VPIN:
+      _controlEnableVirtBtn->set(val);
+      break;
+    case MANUAL_TRIGGER_VPIN:
+      _manualTriggerVirtBtn->set(val);
       break;
     default:
       break;
@@ -81,6 +91,12 @@ void setup() {
     _terminal->clear();
     _terminal->init("Initializing...");
     _doorVirtLed->off();
+    _controlEnableVirtBtn->on();
+    _manualTriggerVirtBtn->off();
+
+    // cron schedules
+    Cron.create(const_cast<char*>(DB_DATA_REFRESH_CRON.c_str()), refreshDatabaseData, false);
+    Cron.create(const_cast<char*>(BLYNK_DATA_UPDATE_CRON.c_str()), updateBlynkData, false);
 
     // get data
     refreshDatabaseData();
@@ -110,6 +126,14 @@ void loop() {
     _th->update();
 
     auto localDateTime = _th->getCurrentLocalDateTime12hr();
+
+    // manual trigger?
+    if (_manualTriggerVirtBtn->isOn()) {
+      _manualTriggerVirtBtn->off();
+
+      triggerIfEnabled();
+      return;
+    }
 
     // low means the sensor has made a connection
     if (_doorSensor->isLow()) {
@@ -163,6 +187,31 @@ void loop() {
   }
 }
 
+void triggerIfEnabled() {
+  String opposite_state = "closing";
+
+  // if we are closed, we will want to be opening it
+  if (_doorSensor->isLow()) {
+    opposite_state = "opening";
+  }
+
+  String message = "";
+  if (_controlEnableVirtBtn->isOn()) {
+    message = "Door is " + opposite_state + ", please wait...";
+
+    // TODO: perform button click now!
+
+    // log
+    _terminal->info(message);
+    _logger->info(message);
+  }
+  else {
+    message = "Not " + opposite_state + "; disabled";
+    _terminal->warning(message);
+    _logger->warning(message);
+  }
+}
+
 void updateUptime() {
   auto current_time = _th->getClockTimeNow();
   int uptime_s = _th->getElapsedTimeS(_uptime_start, current_time);
@@ -182,11 +231,11 @@ void handleCustomTerminalCommands(VirtualTerminal* term, String val) {
     term->println("\"" + TERM_REFRESH + "\" - refreshes data from the database");
   }
 
-  // if (val == TERM_CRON) {
-  //   valid_command = true;
-  //   term->println("Database data refresh: " + DB_DATA_REFRESH_CRON);
-  //   term->println("Blynk data update: " + BLYNK_DATA_UPDATE_CRON);
-  // }
+  if (val == TERM_CRON) {
+    valid_command = true;
+    term->println("Database data refresh: " + DB_DATA_REFRESH_CRON);
+    term->println("Blynk data update: " + BLYNK_DATA_UPDATE_CRON);
+  }
 
   if (val == TERM_CLEAR) {
     valid_command = true;
@@ -233,4 +282,13 @@ void refreshDatabaseData() {
   String refresh_message = "Database data refreshed";
   _logger->info(refresh_message);
   _terminal->println(refresh_message, "[CRON]");
+}
+
+// sends current data to blynk
+void updateBlynkData() {
+  _countTimesOpenedDisplay->write(_countTimesOpenedDisplay->read());
+  _lastTimeOpenedDisplay->write(_lastTimeOpenedDisplay->read());
+  _lastTimeClosedDisplay->write(_lastTimeClosedDisplay->read());
+
+  // don't log as it'll just pollute the db
 }
