@@ -67,6 +67,11 @@ inline const int HARD_RESET_VPIN = 13;
 inline const int TOTAL_CYCLES_TODAY = 14;
 inline const int TOTAL_MISSED_CYCLES_TODAY = 15;
 
+// blynk terminal commands
+inline const String TERM_HELP = "?";
+inline const String TERM_CRON = "cron";
+inline const String TERM_CLEAR = "clear";
+
 // AppLogs db connection settings
 inline const int LOGGER_APP_ID = -1;
 inline const String LOGGER_URL = "";

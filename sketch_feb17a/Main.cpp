@@ -139,7 +139,7 @@ void trySetup() {
   _blynk->notify(init_message);
   _terminal->info(init_message);
   _terminal->info("IP: " + my_ip);
-  _terminal->info("Type \"?\" to list custom commands");
+  _terminal->info("Type \"" + TERM_HELP + "\" to list custom commands");
 }
 
 void loop() {
@@ -395,19 +395,19 @@ void handleCustomTerminalCommands(VirtualTerminal* term, String val) {
   bool valid_command = false;
   bool skip_done_print = false;
 
-  if (val == "?") {
+  if (val == TERM_HELP) {
     valid_command = true;
-    term->println("\"cron\" - lists cron info");
-    term->println("\"clear\" - clears this terminal display");
+    term->println("\"" + TERM_CRON + "\" - lists cron info");
+    term->println("\"" + TERM_CLEAR + "\" - clears this terminal display");
   }
-  
-  if (val == "cron") {
+
+  if (val == TERM_CRON) {
     valid_command = true;
     term->println("Daily data refresh: " + DAILY_DATA_REFRESH_CRON);
     term->println("Blynk data update: " + BLYNK_DATA_UPDATE_CRON);
   }
 
-  if (val == "clear") {
+  if (val == TERM_CLEAR) {
     valid_command = true;
     skip_done_print = true;
     term->clear();
@@ -415,7 +415,7 @@ void handleCustomTerminalCommands(VirtualTerminal* term, String val) {
 
   if (!valid_command) {
     term->println("Command \"" + val + "\" is invalid");
-    term->println("Type \"?\" to list custom commands");
+    term->println("Type \"" + TERM_HELP + "\" to list custom commands");
   }
   else {
     if (!skip_done_print) {
