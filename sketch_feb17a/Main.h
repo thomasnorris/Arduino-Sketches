@@ -27,7 +27,7 @@ void handleException(String message, String details);
 void getAndSetDataForToday();
 
 void timerStart();
-void timerStop();
+void timerStop(bool manual = false);
 void cycleIfReady();
 void updateUptime();
 void cycleIfEnabled(bool manual = false);

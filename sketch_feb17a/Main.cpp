@@ -38,7 +38,7 @@ auto _terminal = new VirtualTerminal(TERMINAL_VPIN, _th);
 std::chrono::time_point<std::chrono::system_clock> _start_time;
 bool _timer_started = false;
 bool _timer_allow_reset = false;
-bool _door_closed_after_cycle = false;
+bool _door_closed_after_open = false;
 std::chrono::time_point<std::chrono::system_clock> _uptime_start;
 
 // handle blynk virtual pin value changes here
@@ -117,12 +117,6 @@ void setup() {
     _manualCycleVirtBtn->off();
     _cancelCountdownVirtBtn->off();
 
-    // get and set persistent data
-    _totalCyclesTodayDisplay->write(_data->getSumToday(CYCLE_COUNT_DPT));
-    _totalMissedCyclesTodayDisplay->write(_data->getSumToday(MISSED_CYCLE_COUNT_DPT));
-    _lastCycleTimeDisplay->write(_data->getLast(LAST_CYCLE_TIME_DPT));
-    _totalCyclesThisWeekDisplay->write(_data->getSumThisWeek(CYCLE_COUNT_DPT));
-
     // cron schedules
     Cron.create(const_cast<char*>(DB_DATA_REFRESH_CRON.c_str()), refreshDatabaseData, false);
     Cron.create(const_cast<char*>(BLYNK_DATA_UPDATE_CRON.c_str()), updateBlynkData, false);
@@ -138,7 +132,7 @@ void setup() {
     String my_ip = _wifi->getIPAddress();
     _logger->init(init_message, _wifi->getIPAddress());
     _blynk->notify(init_message);
-    _terminal->info(init_message);
+    _terminal->init(init_message);
     _terminal->info("IP: " + my_ip);
     _terminal->info("Type \"" + TERM_HELP + "\" to list custom commands");
   }
@@ -178,7 +172,7 @@ void loop() {
       // only stop if it's running
       if (_timer_started) {
         _logger->info("Countdown manually cancelled");
-        timerStop();
+        timerStop(true);
       }
       else {
         _terminal->warning("Timer not running");
@@ -198,7 +192,7 @@ void loop() {
 
       // allow timer to be reset on next open
       _timer_allow_reset = true;
-      _door_closed_after_cycle = true;
+      _door_closed_after_open = true;
 
       if (!_timer_started) {
         _terminal->info("Ready for cycle");
@@ -210,7 +204,7 @@ void loop() {
       _doorVirtLed->off();
 
       // make sure the door has been closed once
-      if (!_door_closed_after_cycle) {
+      if (!_door_closed_after_open) {
         _terminal->warning("Door open after previous cycle");
         return;
       }
@@ -218,6 +212,7 @@ void loop() {
       // start the timer once
       // either if it has never been started, or if it can be reset
       if (!_timer_started || _timer_allow_reset) {
+        _terminal->info("Door opened");
         timerStart();
       }
     }
@@ -286,15 +281,20 @@ void timerStart() {
   _start_time = _th->getClockTimeNow();
 }
 
-void timerStop() {
+void timerStop(bool manual) {
   String message = "Timer stopped";
+
+  if (manual) {
+    message += " manually";
+  }
+
   _cycleTimingLed->off();
   _terminal->info(message);
   _logger->info(message);
 
   _timer_started = false;
   _timer_allow_reset = false;
-  _door_closed_after_cycle = false;
+  _door_closed_after_open = false;
 
   _timerCountdownDisplay->write(_th->prettyFormatS(WAIT_TIME_BEFORE_CYCLE_M * 60));
 }
