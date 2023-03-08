@@ -95,8 +95,6 @@ void setup() {
     Serial.begin(BAUD);
     while (!Serial) {}
 
-    _uptime_start = _th->getClockTimeNow();
-
     // init connections
     _wifi->connect();
     _blynk->configure();
@@ -105,6 +103,9 @@ void setup() {
     _ota->begin();
     _th->begin();
     _th->update();
+
+    // start uptime now
+    _uptime_start = _th->getClockTimeNow();
 
     // init bylnk i/o
     _terminal->clear();
