@@ -8,7 +8,7 @@ inline const String HOSTNAME = "LitterBoxCycler";
 
 // cron schedules (see https://crontab.cronhub.io/), 6 fields format
 inline const String DB_DATA_REFRESH_CRON = "0 0 0 * * *";   // every day at midnight
-inline const String BLYNK_DATA_UPDATE_CRON = "0 */15 * * * *"; // every 15 minutes
+inline const String BLYNK_DATA_UPDATE_CRON = "0 */15 * * * *"; // every 1 minute
 
 // ArduinoData db connection settings
 inline const int ARDUINO_DATA_APP_ID = 11;
@@ -51,6 +51,9 @@ inline const String BLYNK_IP = "192.168.1.63";
 inline const int BLYNK_PORT = 8442;
 inline const String BLYNK_AUTH_TOKEN = "";
 
+// blynk notifications
+inline const bool BLYNK_ENABLE_NOTIFICATIONS = false;
+
 // blynk pins
 inline const int TIMER_COUNTDOWN_DISPLAY_VPIN = 0;
 inline const int CYCLE_ENABLE_VPIN = 1;
@@ -73,6 +76,7 @@ inline const String TERM_CRON = "cron";
 inline const String TERM_CLEAR = "clear";
 inline const String TERM_RESET = "reset";
 inline const String TERM_REFRESH = "refresh";
+inline const String TERM_TOGGLE_NOTIFS = "notifs";
 
 // AppLogs db connection settings
 inline const int LOGGER_APP_ID = -1;

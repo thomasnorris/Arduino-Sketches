@@ -86,7 +86,7 @@ void handleException(String origin, String message, String details) {
   _logger->error(message, origin + ": " + details);
 
   message = "Error in " + origin + ": " + message;
-  _blynk->notify(message);
+  _blynk->notify(message, true);
   _terminal->error(message);
 }
 
@@ -100,6 +100,7 @@ void setup() {
     _blynk->configure();
     _blynk->connect();
     _blynk->run();
+    _blynk->notifySetEnabled(BLYNK_ENABLE_NOTIFICATIONS);
     _ota->begin();
     _th->begin();
     _th->update();
@@ -132,10 +133,11 @@ void setup() {
     String init_message = "System initialized";
     String my_ip = _wifi->getIPAddress();
     _logger->init(init_message, _wifi->getIPAddress());
-    _blynk->notify(init_message);
     _terminal->init(init_message);
     _terminal->info("IP: " + my_ip);
     _terminal->info("Type \"" + TERM_HELP + "\" to list custom commands");
+
+    _blynk->notify(init_message + " - Other notifications " + String(_blynk->notifyGetEnabled() ? "enabled" : "disabled"), true);
   }
   catch (...) {
     _handler->handle("Main.cpp/setup()");
@@ -370,50 +372,52 @@ void updateUptime() {
 
 // handling for any custom commands send through a VirtualTerminal
 void handleCustomTerminalCommands(VirtualTerminal* term, String val) {
-  bool valid_command = false;
-  bool skip_done_print = false;
 
   if (val == TERM_HELP) {
-    valid_command = true;
-    term->println("\"" + TERM_CRON + "\" - lists cron info for enabled jobs");
-    term->println("\"" + TERM_CLEAR + "\" - clears this terminal display");
-    term->println("\"" + TERM_RESET + "\" - performs a hard reset");
-    term->println("\"" + TERM_REFRESH + "\" - refreshes data from the database");
+    term->help("\"" + TERM_CRON + "\"    - lists cron info for enabled jobs");
+    term->help("\"" + TERM_CLEAR + "\"   - clears this terminal display");
+    term->help("\"" + TERM_RESET + "\"   - performs a hard reset");
+    term->help("\"" + TERM_REFRESH + "\" - refreshes data from the database");
+    term->help("\"" + TERM_TOGGLE_NOTIFS + "\"  - toggles Blynk push notifications on or off");
+    term->emptyln();
+    return;
   }
 
   if (val == TERM_CRON) {
-    valid_command = true;
-    term->println("Database data refresh: " + DB_DATA_REFRESH_CRON);
-    term->println("Blynk data update: " + BLYNK_DATA_UPDATE_CRON);
+    term->println("Database data refresh: " + DB_DATA_REFRESH_CRON, "-->", false);
+    term->println("Blynk data update:     " + BLYNK_DATA_UPDATE_CRON, "-->", false);
+    term->emptyln();
+    return;
   }
 
   if (val == TERM_CLEAR) {
-    valid_command = true;
-    skip_done_print = true;
     term->clear();
+    return;
   }
 
   if (val == TERM_RESET) {
-    valid_command = true;
-    skip_done_print = true;
     performHardReset();
+    return;
   }
 
   if (val == TERM_REFRESH) {
-    valid_command = true;
-    skip_done_print = true;
     refreshDatabaseData();
+    return;
   }
 
-  if (!valid_command) {
-    term->println("Command \"" + val + "\" is invalid");
-    term->println("Type \"" + TERM_HELP + "\" to list custom commands");
+  if (val == TERM_TOGGLE_NOTIFS) {
+    _blynk->notifyToggleEnabled();
+    String notify_message = "Blynk notifications " + String(_blynk->notifyGetEnabled() ? "enabled" : "disabled");
+
+    _terminal->println(notify_message, "-->", false);
+    _blynk->notify(notify_message);
+    term->emptyln();
+    return;
   }
-  else {
-    if (!skip_done_print) {
-      term->println("Done printing info for command \"" + val + "\"");
-    }
-  }
+
+  term->help("Command \"" + val + "\" is invalid");
+  term->help("Type \"" + TERM_HELP + "\" to list custom commands");
+  term->emptyln();
 }
 
 void performHardReset() {
