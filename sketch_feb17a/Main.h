@@ -24,8 +24,6 @@ void handleBlynkPinValueChange(int pin, String value);
 // defined in ExceptionHandlerClass.cpp
 void handleException(String message, String details);
 
-void getAndSetDataForToday();
-
 void timerStart();
 void timerStop(bool manual = false);
 void cycleIfReady();
