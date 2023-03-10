@@ -198,7 +198,7 @@ void loop() {
       _door_closed_after_open = true;
 
       if (!_timer_started) {
-        _terminal->info("Ready for cycle");
+        _terminal->info("Ready");
       }
     }
     else {
@@ -260,7 +260,7 @@ void performCycleCooldown() {
     _cycleCooldownDisplay->write(_th->prettyFormatS(--delay_s));
 
     if (delay_s == CYCLE_COOLDOWN_DELAY_S - 2) {
-      _terminal->info("Cycle in cooldown");
+      _terminal->info("Cooling down...");
     }
 
     delay(1000);
@@ -330,7 +330,7 @@ void cycleIfEnabled(bool manual) {
 
   String message;
   if (_cycleEnableVirtBtn->isOn()) {
-    _terminal->info("Cycling...");
+    _terminal->info("Sending cycle command...");
     _gaClient->send(CYCLE_COMMAND);
 
     message = "Cycle command sent";
@@ -372,7 +372,6 @@ void updateUptime() {
 
 // handling for any custom commands send through a VirtualTerminal
 void handleCustomTerminalCommands(VirtualTerminal* term, String val) {
-
   if (val == TERM_HELP) {
     term->help("\"" + TERM_CRON + "\"    - lists cron info for enabled jobs");
     term->help("\"" + TERM_CLEAR + "\"   - clears this terminal display");

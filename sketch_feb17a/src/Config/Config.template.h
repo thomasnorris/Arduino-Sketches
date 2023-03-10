@@ -8,7 +8,7 @@ inline const String HOSTNAME = "LitterBoxCycler";
 
 // cron schedules (see https://crontab.cronhub.io/), 6 fields format
 inline const String DB_DATA_REFRESH_CRON = "0 0 0 * * *";   // every day at midnight
-inline const String BLYNK_DATA_UPDATE_CRON = "0 */15 * * * *"; // every 1 minute
+inline const String BLYNK_DATA_UPDATE_CRON = "0 */1 * * * *"; // every 1 minute
 
 // ArduinoData db connection settings
 inline const int ARDUINO_DATA_APP_ID = 11;
