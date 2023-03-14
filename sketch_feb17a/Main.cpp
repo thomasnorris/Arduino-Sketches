@@ -235,6 +235,7 @@ void handleCustomTerminalCommands(VirtualTerminal* term, String val) {
     term->help("\"" + TERM_RESET + "\" - performs a hard reset");
     term->help("\"" + TERM_REFRESH + "\" - refreshes data from the database");
     term->emptyln();
+    return;
   }
 
   if (val == TERM_CRON) {
