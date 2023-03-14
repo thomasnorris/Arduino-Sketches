@@ -105,10 +105,7 @@ void setup() {
     _th->begin();
     _th->update();
 
-    // start uptime now
-    _uptime_start = _th->getClockTimeNow();
-
-    // init bylnk i/o
+    // init blynk i/o
     _terminal->clear();
     _terminal->init("Initializing...");
     _doorVirtLed->off();
@@ -128,6 +125,9 @@ void setup() {
 
     // enable cycling
     _cycleEnableVirtBtn->on();
+
+    // start uptime now
+    _uptime_start = _th->getClockTimeNow();
 
     // respond done
     String init_message = "System initialized";
@@ -408,7 +408,7 @@ void handleCustomTerminalCommands(VirtualTerminal* term, String val) {
     _blynk->notifyToggleEnabled();
     String notify_message = "Blynk notifications " + String(_blynk->notifyGetEnabled() ? "enabled" : "disabled");
 
-    _terminal->println(notify_message, "-->", false);
+    term->println(notify_message, "-->", false);
     _blynk->notify(notify_message);
     term->emptyln();
     return;
