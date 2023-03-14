@@ -34,12 +34,16 @@ inline const String BLYNK_IP = "192.168.1.63";
 inline const int BLYNK_PORT = 8442;
 inline const String BLYNK_AUTH_TOKEN = "";
 
+// blynk notifications
+inline const bool BLYNK_ENABLE_NOTIFICATIONS = false;
+
 // blynk terminal commands
 inline const String TERM_HELP = "?";
 inline const String TERM_CRON = "cron";
 inline const String TERM_CLEAR = "clear";
 inline const String TERM_RESET = "reset";
 inline const String TERM_REFRESH = "refresh";
+inline const String TERM_TOGGLE_NOTIFS = "notifs";
 
 // AppLogs db connection settings
 inline const int LOGGER_APP_ID = -1; // get from Common.Apps
@@ -55,6 +59,10 @@ inline const byte DOOR_PIN_PINMODE = INPUT_PULLUP; // default floating to be HIG
 // door led
 inline const byte DOOR_LED_PIN = D0;
 inline const byte DOOR_LED_ON_VALUE = LOW;
+
+// remote relay
+inline const byte REMOTE_RELAY = D5; // gpio 14
+inline const byte REMOTE_RELAY_PINMODE = OUTPUT;
 
 // blynk pins
 inline const int DOOR_LED_VPIN = 0;

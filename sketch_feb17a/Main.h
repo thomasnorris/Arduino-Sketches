@@ -28,4 +28,6 @@ void refreshDatabaseData();
 void updateBlynkData();
 void triggerIfEnabled();
 
+void clickRemote();
+
 #endif

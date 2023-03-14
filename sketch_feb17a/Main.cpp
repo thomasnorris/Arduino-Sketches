@@ -9,6 +9,7 @@ auto _th = new TimeHelpers();
 auto _data = new ArduinoDataClient(ARDUINO_DATA_APP_ID, ARDUINO_DATA_URL, ARDUINO_DATA_USERNAME, ARDUINO_DATA_PASSWORD, ARDUINO_DATA_PORT);
 auto _doorSensor = new Gpio(DOOR_PIN, DOOR_PIN_PINMODE);
 auto _doorLed = new Led(DOOR_LED_PIN, DOOR_LED_ON_VALUE);
+auto _remoteRelay = new Gpio(REMOTE_RELAY, REMOTE_RELAY_PINMODE);
 auto _handler = new ExceptionHandler();
 
 // blynk leds
@@ -29,8 +30,8 @@ auto _terminal = new VirtualTerminal(TERMINAL_VPIN, _th);
 
 // variables
 std::chrono::time_point<std::chrono::system_clock> _uptime_start;
-bool last_time_opened_recorded = false;
-bool last_time_closed_recorded = false;
+bool _last_time_opened_recorded = false;
+bool _last_time_closed_recorded = false;
 
 // handle blynk virtual pin value changes here
 void handleBlynkPinValueChange(int pin, String val) {
@@ -67,7 +68,7 @@ void handleException(String origin, String message, String details) {
   _logger->error(message, origin + ": " + details);
 
   message = "Error in " + origin + ": " + message;
-  _blynk->notify(message);
+  _blynk->notify(message, true);
   _terminal->error(message);
 }
 
@@ -76,23 +77,25 @@ void setup() {
     Serial.begin(BAUD);
     while (!Serial) {}
 
-    _uptime_start = _th->getClockTimeNow();
-
     // init connections
     _wifi->connect();
     _blynk->configure();
     _blynk->connect();
     _blynk->run();
+    _blynk->notifySetEnabled(BLYNK_ENABLE_NOTIFICATIONS);
     _ota->begin();
     _th->begin();
     _th->update();
 
-    // init bylnk i/o
+    // init blynk i/o
     _terminal->clear();
     _terminal->init("Initializing...");
     _doorVirtLed->off();
     _controlEnableVirtBtn->on();
-    _manualTriggerVirtBtn->off();
+    _remoteRelay->off();
+
+    // init physical i/0
+    _remoteRelay->off();
 
     // cron schedules
     Cron.create(const_cast<char*>(DB_DATA_REFRESH_CRON.c_str()), refreshDatabaseData, false);
@@ -101,14 +104,18 @@ void setup() {
     // get data
     refreshDatabaseData();
 
+    // start uptime now
+    _uptime_start = _th->getClockTimeNow();
+
     // respond done
     String init_message = "System initialized";
     String my_ip = _wifi->getIPAddress();
     _logger->init(init_message, _wifi->getIPAddress());
-    _blynk->notify(init_message);
     _terminal->init(init_message);
     _terminal->info("IP: " + my_ip);
     _terminal->info("Type \"" + TERM_HELP + "\" to list custom commands");
+
+    _blynk->notify(init_message + " - Other notifications " + String(_blynk->notifyGetEnabled() ? "enabled" : "disabled"), true);
   }
   catch (...) {
     _handler->handle("Main.cpp/setup()");
@@ -117,6 +124,7 @@ void setup() {
 
 void loop() {
   try {
+    Cron.delay();
     updateUptime();
 
     _wifi->checkConnection();
@@ -140,10 +148,10 @@ void loop() {
       _doorLed->on();
       _doorVirtLed->on();
 
-      last_time_opened_recorded = false;
+      _last_time_opened_recorded = false;
 
-      if (!last_time_closed_recorded) {
-        last_time_closed_recorded = true;
+      if (!_last_time_closed_recorded) {
+        _last_time_closed_recorded = true;
 
         // say
         String message = "Door closed";
@@ -161,10 +169,10 @@ void loop() {
       _doorLed->off();
       _doorVirtLed->off();
 
-      last_time_closed_recorded = false;
+      _last_time_closed_recorded = false;
 
-      if (!last_time_opened_recorded) {
-        last_time_opened_recorded = true;
+      if (!_last_time_opened_recorded) {
+        _last_time_opened_recorded = true;
 
         // say
         String message = "Door opened";
@@ -200,6 +208,7 @@ void triggerIfEnabled() {
     message = "Door is " + opposite_state + ", please wait...";
 
     // TODO: perform button click now!
+    clickRemote();
 
     // log
     _terminal->info(message);
@@ -220,50 +229,49 @@ void updateUptime() {
 
 // handling for any custom commands send through a VirtualTerminal
 void handleCustomTerminalCommands(VirtualTerminal* term, String val) {
-  bool valid_command = false;
-  bool skip_done_print = false;
-
   if (val == TERM_HELP) {
-    valid_command = true;
-    term->println("\"" + TERM_CRON + "\" - lists cron info for enabled jobs");
-    term->println("\"" + TERM_CLEAR + "\" - clears this terminal display");
-    term->println("\"" + TERM_RESET + "\" - performs a hard reset");
-    term->println("\"" + TERM_REFRESH + "\" - refreshes data from the database");
+    term->help("\"" + TERM_CRON + "\" - lists cron info for enabled jobs");
+    term->help("\"" + TERM_CLEAR + "\" - clears this terminal display");
+    term->help("\"" + TERM_RESET + "\" - performs a hard reset");
+    term->help("\"" + TERM_REFRESH + "\" - refreshes data from the database");
+    term->emptyln();
   }
 
   if (val == TERM_CRON) {
-    valid_command = true;
-    term->println("Database data refresh: " + DB_DATA_REFRESH_CRON);
-    term->println("Blynk data update: " + BLYNK_DATA_UPDATE_CRON);
+    term->println("Database data refresh: " + DB_DATA_REFRESH_CRON, "-->", false);
+    term->println("Blynk data update: " + BLYNK_DATA_UPDATE_CRON, "-->", false);
+    term->emptyln();
+    return;
   }
 
   if (val == TERM_CLEAR) {
-    valid_command = true;
-    skip_done_print = true;
     term->clear();
+    return;
   }
 
   if (val == TERM_RESET) {
-    valid_command = true;
-    skip_done_print = true;
     performHardReset();
+    return;
   }
 
   if (val == TERM_REFRESH) {
-    valid_command = true;
-    skip_done_print = true;
     refreshDatabaseData();
+    return;
   }
 
-  if (!valid_command) {
-    term->println("Command \"" + val + "\" is invalid");
-    term->println("Type \"" + TERM_HELP + "\" to list custom commands");
+  if (val == TERM_TOGGLE_NOTIFS) {
+    _blynk->notifyToggleEnabled();
+    String notify_message = "Blynk notifications " + String(_blynk->notifyGetEnabled() ? "enabled" : "disabled");
+
+    term->println(notify_message, "-->", false);
+    _blynk->notify(notify_message);
+    term->emptyln();
+    return;
   }
-  else {
-    if (!skip_done_print) {
-      term->println("Done printing info for command \"" + val + "\"");
-    }
-  }
+
+  term->help("Command \"" + val + "\" is invalid");
+  term->help("Type \"" + TERM_HELP + "\" to list custom commands");
+  term->emptyln();
 }
 
 void performHardReset() {
@@ -291,4 +299,10 @@ void updateBlynkData() {
   _lastTimeClosedDisplay->write(_lastTimeClosedDisplay->read());
 
   // don't log as it'll just pollute the db
+}
+
+void clickRemote() {
+  _remoteRelay->on();
+  delay(1000);
+  _remoteRelay->off();
 }
